@@ -1,0 +1,700 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Courier New', 'Courier', monospace;
+  background: #000000;
+  color: #00ff00;
+  overflow-x: hidden;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: 'Courier New', 'Courier', monospace;
+}
+
+.terminal-container {
+  min-height: 100vh;
+  background: #000000;
+  padding: 20px;
+  font-family: 'Courier New', 'Courier', monospace;
+}
+
+.terminal-screen {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #000000;
+}
+
+.ascii-header {
+  color: #00ff00;
+  text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+  margin-bottom: 30px;
+  font-size: 0.7em;
+  line-height: 1.2;
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+  align-items: start;
+}
+
+.ascii-header pre {
+  margin: 0;
+  font-family: 'Courier New', 'Courier', monospace;
+  text-align: start;
+}
+
+.terminal-line {
+  margin: 10px 0;
+  font-family: 'Courier New', 'Courier', monospace;
+}
+
+.terminal-prompt {
+  color: #00ff00;
+  font-weight: bold;
+  margin-right: 10px;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.contract-label {
+  color: #00ff00;
+  font-weight: bold;
+  margin-right: 10px;
+  text-shadow: 0 0 5px #00aa00;
+}
+
+.terminal-text {
+  color: #00ff00;
+  text-shadow: 0 0 3px #00ff00;
+}
+
+.terminal-success {
+  color: #00ff00;
+  font-weight: bold;
+  text-shadow: 0 0 10px #00ff00;
+  margin-right: 10px;
+}
+
+.terminal-error {
+  color: #ff0000;
+  font-weight: bold;
+  text-shadow: 0 0 10px #ff0000;
+  margin-top: 10px;
+  padding: 5px;
+  border-left: 2px solid #ff0000;
+  padding-left: 10px;
+}
+
+.blinking-cursor {
+  color: #00ff00;
+  animation: blink 1s infinite;
+  font-weight: bold;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.terminal-box {
+  background: #0a0a0a;
+  border: 1px solid #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0, 255, 0, 0.1);
+  margin-bottom: 20px;
+  padding: 15px;
+  font-family: 'Courier New', 'Courier', monospace;
+}
+
+.terminal-header {
+  border-bottom: 1px solid #00ff00;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.function-name {
+  color: #00ff00;
+  font-weight: bold;
+  text-shadow: 0 0 5px #00ff00;
+  font-size: 1.1em;
+}
+
+.terminal-body {
+  padding: 10px 0;
+}
+
+.params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.param-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.terminal-label {
+  color: #00ff00;
+  font-size: 0.9em;
+  margin-bottom: 5px;
+  text-shadow: 0 0 3px #00ff00;
+}
+
+.type-hint {
+  color: #00aa00;
+  font-size: 0.85em;
+}
+
+.terminal-input,
+.terminal-select {
+  background: #000000;
+  border: 1px solid #00ff00;
+  color: #00ff00;
+  padding: 8px;
+  font-family: 'Courier New', 'Courier', monospace;
+  font-size: 0.9em;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 255, 0, 0.2);
+}
+
+.terminal-input:focus,
+.terminal-select:focus {
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  border-color: #00ff00;
+}
+
+.terminal-input::placeholder {
+  color: #004400;
+}
+
+.terminal-select {
+  cursor: pointer;
+}
+
+.terminal-select option {
+  background: #000000;
+  color: #00ff00;
+}
+
+.terminal-button {
+  background: #000000;
+  border: 2px solid #00ff00;
+  color: #00ff00;
+  padding: 12px 24px;
+  font-family: 'Courier New', 'Courier', monospace;
+  font-weight: bold;
+  font-size: 0.95em;
+  cursor: pointer;
+  text-shadow: 0 0 5px #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.terminal-button:hover:not(:disabled) {
+  background: #001100;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+  text-shadow: 0 0 10px #00ff00;
+}
+
+.terminal-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #004400;
+}
+
+.contract-section {
+  background: #0a0a0a;
+  border: 2px solid #00ff00;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.4), inset 0 0 15px rgba(0, 255, 0, 0.1);
+  padding: 25px;
+  margin-bottom: 30px;
+  font-family: 'Courier New', 'Courier', monospace;
+}
+
+.contract-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #00ff00;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.contract-title {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #00ff00;
+  text-shadow: 0 0 10px #00ff00;
+  font-family: 'Courier New', 'Courier', monospace;
+}
+
+.contract-address {
+  font-family: 'Courier New', 'Courier', monospace;
+  font-size: 0.85em;
+  color: #00aa00;
+  background: #000000;
+  padding: 8px 12px;
+  border: 1px solid #00ff00;
+  box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+}
+
+.contract-address-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.address-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.reset-button {
+  padding: 6px 12px;
+  font-size: 0.85em;
+  background: #330000;
+  border-color: #ff0000;
+  color: #ff6666;
+}
+
+.reset-button:hover {
+  background: #550000;
+  border-color: #ff3333;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+.functions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.wallet-section {
+  background: #0a0a0a;
+  border: 1px solid #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  padding: 20px;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.connect-wrapper {
+  margin: 15px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.terminal-footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px dashed #00ff00;
+}
+
+.nav-section {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 15px;
+  background: #0a0a0a;
+  border: 1px solid #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  justify-content: center;
+}
+
+.nav-button {
+  background: #000000;
+  border: 2px solid #00ff00;
+  color: #00ff00;
+  padding: 12px 24px;
+  font-family: 'Courier New', 'Courier', monospace;
+  font-weight: bold;
+  font-size: 0.95em;
+  cursor: pointer;
+  text-shadow: 0 0 5px #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.nav-button:hover {
+  background: #001100;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+  text-shadow: 0 0 10px #00ff00;
+}
+
+.nav-button.active {
+  background: #001100;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+  text-shadow: 0 0 10px #00ff00;
+  border-color: #00ff00;
+}
+
+/* Override RainbowKit styles for terminal theme */
+.connect-wrapper button {
+  background: #000000 !important;
+  border: 2px solid #00ff00 !important;
+  color: #00ff00 !important;
+  font-family: 'Courier New', 'Courier', monospace !important;
+  text-shadow: 0 0 5px #00ff00 !important;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3) !important;
+}
+
+.connect-wrapper button:hover {
+  background: #001100 !important;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.6) !important;
+}
+
+/* Scrollbar styling for terminal look */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+  border: 1px solid #00ff00;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #00ff00;
+  box-shadow: 0 0 10px #00ff00;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00aa00;
+}
+
+/* Selection styling */
+::selection {
+  background: #00ff00;
+  color: #000000;
+}
+
+::-moz-selection {
+  background: #00ff00;
+  color: #000000;
+}
+
+/* Table of Contents */
+.toc-section {
+  background: #0a0a0a;
+  border: 2px solid #00ff00;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.4), inset 0 0 15px rgba(0, 255, 0, 0.1);
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.toc-header {
+  margin-bottom: 25px;
+  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.admin-panel-button {
+  padding: 10px 20px;
+  background: #003300;
+  border-color: #00ff00;
+  color: #00ff00;
+  font-weight: bold;
+}
+
+.admin-panel-button:hover {
+  background: #005500;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+}
+
+.toc-title {
+  color: #00ff00;
+  font-size: 2em;
+  font-weight: bold;
+  text-shadow: 0 0 10px #00ff00;
+  font-family: 'Courier New', 'Courier', monospace;
+}
+
+.toc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.toc-item {
+  background: #000000;
+  border: 1px solid #00ff00;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 5px rgba(0, 255, 0, 0.2);
+}
+
+.toc-item:hover {
+  background: #001100;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+  border-color: #00ff00;
+  transform: translateY(-2px);
+}
+
+.toc-item-name {
+  color: #00ff00;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.toc-item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85em;
+}
+
+.toc-item-functions {
+  color: #00aa00;
+}
+
+.toc-item-status {
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+
+.status-connected {
+  color: #00ff00;
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.status-missing {
+  color: #ffaa00;
+  background: rgba(255, 170, 0, 0.1);
+}
+
+/* Contract Section Updates */
+.contract-title-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.back-button {
+  background: #000000;
+  border: 2px solid #00ff00;
+  color: #00ff00;
+  padding: 10px 20px;
+  font-family: 'Courier New', 'Courier', monospace;
+  font-weight: bold;
+  font-size: 0.9em;
+  cursor: pointer;
+  text-shadow: 0 0 5px #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.back-button:hover {
+  background: #001100;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+  text-shadow: 0 0 10px #00ff00;
+}
+
+.contract-notice {
+  color: #00aa00;
+  font-size: 0.9em;
+  margin-bottom: 15px;
+  font-style: italic;
+  padding: 10px;
+  background: rgba(0, 170, 0, 0.05);
+  border-left: 3px solid #00aa00;
+}
+
+.contract-address-section {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.address-input-form {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.address-input {
+  flex: 1;
+  min-width: 300px;
+}
+
+/* Two Column Layout */
+.functions-two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+@media (max-width: 1200px) {
+  .functions-two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+.functions-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.column-header {
+  background: #000000;
+  border: 1px solid #00ff00;
+  padding: 15px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 0 10px #00ff00;
+  font-size: 1.4em;
+}
+
+.function-count {
+  color: #00aa00;
+  font-size: 0.9em;
+}
+
+/* Function Box */
+.function-box {
+  background: #000000;
+  border: 1px solid #00ff00;
+  box-shadow: 0 0 5px rgba(0, 255, 0, 0.2);
+  margin-bottom: 20px;
+  padding: 15px;
+  font-family: 'Courier New', 'Courier', monospace;
+}
+
+.function-header {
+  border-bottom: 1px solid #00ff00;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.function-natspec {
+  color: #00aa00;
+  font-size: 0.85em;
+  margin-top: 8px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.function-body {
+  padding: 10px 0;
+}
+
+/* Admin Panel Styles */
+.admin-panel-section {
+  background: #000000;
+  border: 1px solid #00ff00;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.4), inset 0 0 15px rgba(0, 255, 0, 0.1);
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.admin-panel-header {
+  margin-bottom: 30px;
+}
+
+.admin-panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.admin-panel-title {
+  color: #00ff00;
+  font-size: 1.5em;
+  font-weight: bold;
+  text-shadow: 0 0 10px #00ff00;
+  font-family: 'Courier New', 'Courier', monospace;
+}
+
+.admin-panel-stats {
+  color: #00aa00;
+  font-size: 0.9em;
+  padding: 10px;
+  background: #001100;
+  border: 1px solid #00aa00;
+}
+
+.admin-functions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.admin-contract-group {
+  background: #000000;
+  border: 1px solid #00ff00;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.admin-contract-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px dashed #00ff00;
+}
+
+.admin-contract-title {
+  color: #00ff00;
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-contract-address {
+  font-family: 'Courier New', 'Courier', monospace;
+  font-size: 0.85em;
+  color: #00aa00;
+  background: #000000;
+  padding: 8px 12px;
+  border: 1px solid #00ff00;
+  box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+  display: inline-block;
+}
+
+.admin-functions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+.small-button {
+  padding: 5px 10px;
+  font-size: 0.8em;
+}
+
+@media (max-width: 1200px) {
+  .admin-functions-grid {
+    grid-template-columns: 1fr;
+  }
+}
