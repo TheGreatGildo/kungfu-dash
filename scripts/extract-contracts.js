@@ -260,3 +260,4 @@ const libraryCode = generateLibrary(contracts);
 fs.writeFileSync(OUTPUT_FILE, libraryCode, 'utf8');
 console.log(`\n✓ Generated contract library at ${OUTPUT_FILE}`);
 
+
