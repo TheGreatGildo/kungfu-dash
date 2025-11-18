@@ -10,9 +10,10 @@ import { CONTRACT_LIBRARY, CONTRACT_NAMES } from './contracts';
 
 // Default contract addresses (some may be missing)
 const DEFAULT_ADDRESSES = {
-  AlchemistV3: '0xd4B3076F85F21d379F1F0C27a56091f723EA4112',
-  Transmuter: '0xbfa5BFEd5d4f5ed3Aa1840cc58da1bfb3Ab5d208',
-  AlchemistCurator: '0x70f0Cc54AC3FCFF88b2d0E158b0C9bc63e8Ee348',
+  AlchemistV3: '0xb3770D0802515088F85a7aFAfE3f775f8B218249',
+  Transmuter: '0xFe7CaF984eae3B741f335c81983A60443552939e',
+  AlchemistCurator: '0xD1c54329A3eD6a6Dfb8ebe2763cA91feA2BED925',
+  AlchemistV3Position: '0x504bc3E638e2cF2a48f969914dAC35FAc84aFc7c',
   // Other contracts will need addresses provided
 };
 
