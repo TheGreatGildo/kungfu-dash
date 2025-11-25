@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { WagmiProvider, useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { WagmiProvider, useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, createConfig } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { optimism } from 'wagmi/chains';
+import { http } from 'wagmi';
+import { injected, metaMask, coinbaseWallet, walletConnect } from 'wagmi/connectors';
 import '@rainbow-me/rainbowkit/styles.css';
 import './App.css';
+import CuratooorPanel from './CuratooorPanel';
 import { CONTRACT_LIBRARY, CONTRACT_NAMES } from './contracts';
 
 // Default contract addresses (some may be missing)
@@ -14,6 +17,8 @@ const DEFAULT_ADDRESSES = {
   Transmuter: '0xFe7CaF984eae3B741f335c81983A60443552939e',
   AlchemistCurator: '0xD1c54329A3eD6a6Dfb8ebe2763cA91feA2BED925',
   AlchemistV3Position: '0x504bc3E638e2cF2a48f969914dAC35FAc84aFc7c',
+  AaveV3OPUSDCStrategy: '0x90BF915dc6BBFE3E306D645FB9879912859d0a68',
+  MoonwellUSDCStrategy: '0x1EE3C0bc7E6d5bc5CBA345606b2856de8623F8d5',
   // Other contracts will need addresses provided
 };
 
@@ -564,14 +569,19 @@ function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
 }
 
 // Table of Contents component
-function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelSelect }) {
+function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelSelect, onCuratorSelect }) {
   return (
     <div className="toc-section">
       <div className="toc-header">
         <h2 className="toc-title">Table of Contracts</h2>
-        <button onClick={onAdminPanelSelect} className="terminal-button admin-panel-button">
-          [ADMIN PANEL]
-        </button>
+        <div className="toc-actions">
+          <button onClick={onCuratorSelect} className="terminal-button curator-button">
+            [CURATOOOR]
+          </button>
+          <button onClick={onAdminPanelSelect} className="terminal-button admin-panel-button">
+            [ADMIN PANEL]
+          </button>
+        </div>
       </div>
       <div className="toc-grid">
         {CONTRACT_NAMES.map((contractName) => {
@@ -610,6 +620,7 @@ function AppContent() {
   const { address, isConnected } = useAccount();
   const [selectedContract, setSelectedContract] = useState(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showCuratooor, setShowCuratooor] = useState(false);
   const [contractAddresses, setContractAddresses] = useState(() => {
     // Initialize with default addresses
     const addresses = {};
@@ -622,6 +633,7 @@ function AppContent() {
   const handleContractSelect = (contractName) => {
     setSelectedContract(contractName);
     setShowAdminPanel(false);
+    setShowCuratooor(false);
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -629,11 +641,20 @@ function AppContent() {
   const handleBackToTOC = () => {
     setSelectedContract(null);
     setShowAdminPanel(false);
+    setShowCuratooor(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleAdminPanelSelect = () => {
     setShowAdminPanel(true);
+    setShowCuratooor(false);
+    setSelectedContract(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCuratooorSelect = () => {
+    setShowCuratooor(true);
+    setShowAdminPanel(false);
     setSelectedContract(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -705,6 +726,11 @@ AAAAAAA                   AAAAAAALLLLLLLLLLLLLLLLLLLLLLLL       CCCCCCCCCCCCCHHH
               <span className="blinking-cursor">_</span>
             </div>
           </div>
+        ) : showCuratooor ? (
+          <CuratooorPanel
+            addresses={contractAddresses}
+            onBack={handleBackToTOC}
+          />
         ) : showAdminPanel ? (
           <AdminPanel
             contracts={CONTRACT_LIBRARY}
@@ -727,6 +753,7 @@ AAAAAAA                   AAAAAAALLLLLLLLLLLLLLLLLLLLLLLL       CCCCCCCCCCCCCHHH
             addresses={contractAddresses}
             onContractSelect={handleContractSelect}
             onAdminPanelSelect={handleAdminPanelSelect}
+            onCuratorSelect={handleCuratooorSelect}
           />
         )}
 
@@ -743,11 +770,19 @@ AAAAAAA                   AAAAAAALLLLLLLLLLLLLLLLLLLLLLLL       CCCCCCCCCCCCCHHH
   );
 }
 
-// Configure RainbowKit
-const config = getDefaultConfig({
-  appName: 'Alchemix V3 Admin Dashboard',
-  projectId: 'YOUR_PROJECT_ID',
+// Configure RainbowKit with browser wallet fallback
+// Create config with explicit connectors including browser wallet fallback
+const config = createConfig({
   chains: [optimism],
+  connectors: [
+    metaMask(),
+    coinbaseWallet({ appName: 'Alchemix V3 Admin Dashboard' }),
+    walletConnect({ projectId: 'YOUR_PROJECT_ID' }),
+    injected(), // Browser wallet fallback - detects any injected wallet (MetaMask, Rabby, etc.)
+  ],
+  transports: {
+    [optimism.id]: http(),
+  },
   ssr: false,
 });
 
