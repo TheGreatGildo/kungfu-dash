@@ -5,6 +5,8 @@ module.exports = function override(config, env) {
   config.resolve.alias = {
     ...config.resolve.alias,
     '@react-native-async-storage/async-storage': path.resolve(__dirname, 'src/utils/empty-module.js'),
+    // Stub @metamask/sdk-analytics to avoid openapi-fetch ESM/CJS interop issues
+    '@metamask/sdk-analytics': path.resolve(__dirname, 'src/utils/analytics-stub.js'),
   };
 
   return config;

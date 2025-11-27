@@ -17,6 +17,8 @@ const DEFAULT_ADDRESSES = {
   Transmuter: '0xFe7CaF984eae3B741f335c81983A60443552939e',
   AlchemistCurator: '0xD1c54329A3eD6a6Dfb8ebe2763cA91feA2BED925',
   AlchemistV3Position: '0x504bc3E638e2cF2a48f969914dAC35FAc84aFc7c',
+  AlchemistAllocator: '0xee299b6206e288ba2b38df5adc63d25e8c4802fe',
+  AlchemistTokenVault: '0x363b8C30Ea88639d5567d01bf0FB4a359490EBc9',
   AaveV3OPUSDCStrategy: '0x90BF915dc6BBFE3E306D645FB9879912859d0a68',
   MoonwellUSDCStrategy: '0x1EE3C0bc7E6d5bc5CBA345606b2856de8623F8d5',
   // Other contracts will need addresses provided

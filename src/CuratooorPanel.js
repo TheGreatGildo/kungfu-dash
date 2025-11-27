@@ -17,6 +17,14 @@ const DEPLOYMENTS = {
     label: 'VaultFactory',
     address: '0x655147Ff7259eeCbeFA7bbaeD69A4B7c1Bc90628',
   },
+  alchemistAllocator: {
+    label: 'AlchemistAllocator',
+    address: '0xee299b6206e288ba2b38df5adc63d25e8c4802fe',
+  },
+  alchemistTokenVault: {
+    label: 'AlchemistTokenVault',
+    address: '0x363b8C30Ea88639d5567d01bf0FB4a359490EBc9',
+  },
 };
 
 const STRATEGY_PRESETS = [
