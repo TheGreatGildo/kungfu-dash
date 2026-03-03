@@ -61,10 +61,21 @@ export { VelodromeOPwSTEH_WETH_Strategy } from './VelodromeOPwSTEH_WETH_Strategy
 export { Beefy_ARB_gUSDC_Strategy } from './Beefy_ARB_gUSDC_Strategy';
 export { Camelot_ARB_wSTETH_ETH_Strategy } from './Camelot_ARB_wSTETH_ETH_Strategy';
 
+// alETH variants (same ABI, different labels)
+const AlchemistV3_alUSD = { ...AlchemistV3, name: 'AlchemistV3_alUSD', title: 'AlchemistV3 (alUSD)' };
+const AlchemistV3_alETH = { ...AlchemistV3, name: 'AlchemistV3_alETH', title: 'AlchemistV3 (alETH)' };
+const Transmuter_alUSD = { ...Transmuter, name: 'Transmuter_alUSD', title: 'Transmuter (alUSD)' };
+const Transmuter_alETH = { ...Transmuter, name: 'Transmuter_alETH', title: 'Transmuter (alETH)' };
+const AlchemistV3Position_alUSD = { ...AlchemistV3Position, name: 'AlchemistV3Position_alUSD', title: 'AlchemistV3Position (alUSD)' };
+const AlchemistV3Position_alETH = { ...AlchemistV3Position, name: 'AlchemistV3Position_alETH', title: 'AlchemistV3Position (alETH)' };
+
 export const CONTRACT_NAMES = [
-  "AlchemistV3",
-  "Transmuter",
-  "AlchemistV3Position",
+  "AlchemistV3_alUSD",
+  "AlchemistV3_alETH",
+  "Transmuter_alUSD",
+  "Transmuter_alETH",
+  "AlchemistV3Position_alUSD",
+  "AlchemistV3Position_alETH",
   "AlchemistAllocator",
   "AlchemistCurator",
   "AlchemistETHVault",
@@ -94,9 +105,12 @@ export const CONTRACT_NAMES = [
 ];
 
 export const CONTRACT_LIBRARY = {
-  AlchemistV3,
-  Transmuter,
-  AlchemistV3Position,
+  AlchemistV3_alUSD,
+  AlchemistV3_alETH,
+  Transmuter_alUSD,
+  Transmuter_alETH,
+  AlchemistV3Position_alUSD,
+  AlchemistV3Position_alETH,
   AlchemistAllocator,
   AlchemistCurator,
   AlchemistETHVault,

@@ -5,17 +5,25 @@ import { CONTRACT_LIBRARY } from './contracts';
 import { formatUnits } from 'viem';
 
 const DEPLOYMENTS = {
-  mytVault: {
-    label: 'MYT Vault (Morpho Vault)',
-    address: '0xd356aFd1f2c66cDCcACcDBF6501770017e5D43Fa',
+  mytVaultUSDC: {
+    label: 'USDC MYT Vault (alUSD)',
+    address: '0xf9b479281bd85C85FbBaEB1B82A4Ed260c0EbD1b',
+  },
+  mytVaultWETH: {
+    label: 'WETH MYT Vault (alETH)',
+    address: '0x715b82eD525126af05Acf6d3e60A6012393DF8F2',
   },
   mockAlUsd: {
-    label: 'mock alUSD (kungfu)',
-    address: '0x894ED1E34F8f4E6B3951383d72095650028F818e',
+    label: 'mock alUSD',
+    address: '0x37f51eD6FC26F9Dcd16876CEdE4f148C8bA4F863',
+  },
+  mockAlEth: {
+    label: 'mock alETH',
+    address: '0x15118f6612D6d7923dBE8a2416288cb5098c45E4',
   },
   vaultFactory: {
     label: 'VaultFactory',
-    address: '0x655147Ff7259eeCbeFA7bbaeD69A4B7c1Bc90628',
+    address: '0xfDDf7a49B7E1B183Ee604489bCf7DB072c90b298',
   },
   alchemistAllocator: {
     label: 'AlchemistAllocator',
@@ -25,18 +33,31 @@ const DEPLOYMENTS = {
     label: 'AlchemistTokenVault',
     address: '0x363b8C30Ea88639d5567d01bf0FB4a359490EBc9',
   },
+  feeVaultAlUSD: {
+    label: 'Fee Vault (alUSD)',
+    address: '0x08b83b96e382666E6f77b0f3174e9815b33a2a1f',
+  },
+  feeVaultAlETH: {
+    label: 'Fee Vault (alETH)',
+    address: '0x60482BdcA514B47B76dc1400f613f667900C96F1',
+  },
 };
 
 const STRATEGY_PRESETS = [
   {
     key: 'AaveV3OPUSDCStrategy',
-    label: 'Aave V3 OP USDC Strategy',
-    fallback: '0x90BF915dc6BBFE3E306D645FB9879912859d0a68',
+    label: 'Aave V3 OP USDC Strategy (alUSD)',
+    fallback: '0x1a5F2bF82716F283f40E1f7540933F2225508175',
   },
   {
     key: 'MoonwellUSDCStrategy',
-    label: 'Moonwell OP USDC Strategy',
-    fallback: '0x1EE3C0bc7E6d5bc5CBA345606b2856de8623F8d5',
+    label: 'Moonwell OP USDC Strategy (alUSD)',
+    fallback: '0xfED5543237968d39dbfc067bAfEe7e878a0f89F9',
+  },
+  {
+    key: 'MoonwellWETHStrategy',
+    label: 'Moonwell OP WETH Strategy (alETH)',
+    fallback: '0x0525aF9A464828c4F52C5B051DF7eeFf8a3B43C7',
   },
 ];
 
@@ -156,8 +177,8 @@ const CuratooorSnapshot = ({ addresses, strategyOptions }) => {
     }
   }, [ytInput]);
 
-  const alchemistAddress = addresses?.AlchemistV3;
-  const transmuterAddress = addresses?.Transmuter;
+  const alchemistAddress = addresses?.AlchemistV3_alUSD;
+  const transmuterAddress = addresses?.Transmuter_alUSD;
   const gaugeAddress = addresses?.PerpetualGauge;
 
   const isAlchemistReady = isAddress(alchemistAddress);
@@ -626,7 +647,7 @@ const CuratooorPanel = ({ addresses, onBack }) => {
   const deploymentCards = Object.values(DEPLOYMENTS);
 
   const sections = useMemo(() => {
-    const mytVaultAddress = DEPLOYMENTS.mytVault.address;
+    const mytVaultAddress = DEPLOYMENTS.mytVaultUSDC.address;
 
     return [
       {
