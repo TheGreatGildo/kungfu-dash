@@ -218,7 +218,6 @@ const AsciiHeader = () => {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const offscreenRef = useRef(null);
-  const stateRef = useRef(null);
 
   useEffect(() => {
     const container = containerRef.current;
