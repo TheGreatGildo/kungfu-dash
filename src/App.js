@@ -9,6 +9,7 @@ import { injected, metaMask, coinbaseWallet, walletConnect } from 'wagmi/connect
 import '@rainbow-me/rainbowkit/styles.css';
 import './App.css';
 import CuratooorPanel from './CuratooorPanel';
+import AsciiHeader from './AsciiHeader';
 import { CONTRACT_LIBRARY, CONTRACT_NAMES } from './contracts';
 
 // Default contract addresses (some may be missing)
@@ -682,31 +683,7 @@ function AppContent() {
   return (
     <div className="terminal-container">
       <div className="terminal-screen">
-        <div className="ascii-header">
-          <pre>{`
-
-
-               AAA               LLLLLLLLLLL                    CCCCCCCCCCCCCHHHHHHHHH     HHHHHHHHHEEEEEEEEEEEEEEEEEEEEEEMMMMMMMM               MMMMMMMMIIIIIIIIIIXXXXXXX       XXXXXXX
-              A:::A              L:::::::::L                 CCC::::::::::::CH:::::::H     H:::::::HE::::::::::::::::::::EM:::::::M             M:::::::MI::::::::IX:::::X       X:::::X
-             A:::::A             L:::::::::L               CC:::::::::::::::CH:::::::H     H:::::::HE::::::::::::::::::::EM::::::::M           M::::::::MI::::::::IX:::::X       X:::::X
-            A:::::::A            LL:::::::LL              C:::::CCCCCCCC::::CHH::::::H     H::::::HHEE::::::EEEEEEEEE::::EM:::::::::M         M:::::::::MII::::::IIX::::::X     X::::::X
-           A:::::::::A             L:::::L               C:::::C       CCCCCC  H:::::H     H:::::H    E:::::E       EEEEEEM::::::::::M       M::::::::::M  I::::I  XXX:::::X   X:::::XXX
-          A:::::A:::::A            L:::::L              C:::::C                H:::::H     H:::::H    E:::::E             M:::::::::::M     M:::::::::::M  I::::I     X:::::X X:::::X
-         A:::::A A:::::A           L:::::L              C:::::C                H::::::HHHHH::::::H    E::::::EEEEEEEEEE   M:::::::M::::M   M::::M:::::::M  I::::I      X:::::X:::::X
-        A:::::A   A:::::A          L:::::L              C:::::C                H:::::::::::::::::H    E:::::::::::::::E   M::::::M M::::M M::::M M::::::M  I::::I       X:::::::::X
-       A:::::A     A:::::A         L:::::L              C:::::C                H:::::::::::::::::H    E:::::::::::::::E   M::::::M  M::::M::::M  M::::::M  I::::I       X:::::::::X
-      A:::::AAAAAAAAAA:::::A       L:::::L              C:::::C                H::::::HHHHH::::::H    E::::::EEEEEEEEEE   M::::::M   M:::::::M   M::::::M  I::::I      X:::::X:::::X
-     A:::::::::::::::::::::A       L:::::L              C:::::C                H:::::H     H:::::H    E:::::E             M::::::M    M:::::M    M::::::M  I::::I     X:::::X X:::::X
-    A:::::AAAAAAAAAAAAA:::::A      L:::::L         LLLLLLC:::::C       CCCCCC  H:::::H     H:::::H    E:::::E       EEEEEEM::::::M     MMMMM     M::::::M  I::::I  XXX:::::X   X:::::XXX
-   A:::::A             A:::::A   LL:::::::LLLLLLLLL:::::L C:::::CCCCCCCC::::CHH::::::H     H::::::HHEE::::::EEEEEEEE:::::EM::::::M               M::::::MII::::::IIX::::::X     X::::::X
-  A:::::A               A:::::A  L::::::::::::::::::::::L  CC:::::::::::::::CH:::::::H     H:::::::HE::::::::::::::::::::EM::::::M               M::::::MI::::::::IX:::::X       X:::::X
- A:::::A                 A:::::A L::::::::::::::::::::::L    CCC::::::::::::CH:::::::H     H:::::::HE::::::::::::::::::::EM::::::M               M::::::MI::::::::IX:::::X       X:::::X
-AAAAAAA                   AAAAAAALLLLLLLLLLLLLLLLLLLLLLLL       CCCCCCCCCCCCCHHHHHHHHH     HHHHHHHHHEEEEEEEEEEEEEEEEEEEEEEMMMMMMMM               MMMMMMMMIIIIIIIIIIXXXXXXX       XXXXXXX
-
-
-
-          `}</pre>
-        </div>
+        <AsciiHeader />
 
         <div className="wallet-section">
           <div className="terminal-line">
