@@ -1,51 +1,5 @@
 import React, { useRef, useEffect } from 'react';
 
-/* ── 6×8 bitmap font ─────────────────────────────────────── */
-const GLYPHS = {};
-function def(ch, ...rows) {
-  GLYPHS[ch] = rows.map(r =>
-    r.split('').map(c => (c === '#' ? 1 : 0)),
-  );
-}
-
-def('A','.####.','##..##','##..##','######','##..##','##..##','##..##','......');
-def('B','#####.','##..##','##..##','#####.','##..##','##..##','#####.','......');
-def('C','.####.','##..##','##....','##....','##....','##..##','.####.','......');
-def('D','####..','##.##.','##..##','##..##','##..##','##.##.','####..','......');
-def('E','######','##....','##....','#####.','##....','##....','######','......');
-def('F','######','##....','##....','#####.','##....','##....','##....','......');
-def('G','.####.','##..##','##....','##.###','##..##','##..##','.####.','......');
-def('H','##..##','##..##','##..##','######','##..##','##..##','##..##','......');
-def('I','######','..##..','..##..','..##..','..##..','..##..','######','......');
-def('J','..####','....##','....##','....##','##..##','##..##','.####.','......');
-def('K','##..##','##.##.','####..','###...','####..','##.##.','##..##','......');
-def('L','##....','##....','##....','##....','##....','##....','######','......');
-def('M','##..##','######','######','##.###','##..##','##..##','##..##','......');
-def('N','##..##','###.##','######','##.###','##..##','##..##','##..##','......');
-def('O','.####.','##..##','##..##','##..##','##..##','##..##','.####.','......');
-def('P','#####.','##..##','##..##','#####.','##....','##....','##....','......');
-def('Q','.####.','##..##','##..##','##..##','##.##.','##.##.','.###.#','......');
-def('R','#####.','##..##','##..##','#####.','####..','##.##.','##..##','......');
-def('S','.####.','##..##','##....','.####.','....##','##..##','.####.','......');
-def('T','######','..##..','..##..','..##..','..##..','..##..','..##..','......');
-def('U','##..##','##..##','##..##','##..##','##..##','##..##','.####.','......');
-def('V','##..##','##..##','##..##','##..##','##..##','.####.','..##..','......');
-def('W','##..##','##..##','##..##','##.###','######','######','##..##','......');
-def('X','##..##','##..##','.####.','..##..','.####.','##..##','##..##','......');
-def('Y','##..##','##..##','.####.','..##..','..##..','..##..','..##..','......');
-def('Z','######','....##','...##.','..##..','.##...','##....','######','......');
-def('0','.####.','##..##','##.###','######','###.##','##..##','.####.','......');
-def('1','..##..','.###..','..##..','..##..','..##..','..##..','######','......');
-def('2','.####.','##..##','....##','...##.','.##...','##....','######','......');
-def('3','######','...##.','.##...','.####.','....##','##..##','.####.','......');
-def('4','...##.','..###.','.####.','##.##.','######','...##.','...##.','......');
-def('5','######','##....','#####.','....##','....##','##..##','.####.','......');
-def('6','.####.','##....','#####.','##..##','##..##','##..##','.####.','......');
-def('7','######','....##','...##.','..##..','..##..','..##..','..##..','......');
-def('8','.####.','##..##','##..##','.####.','##..##','##..##','.####.','......');
-def('9','.####.','##..##','##..##','.#####','....##','....##','.####.','......');
-def(' ','......','......','......','......','......','......','......','......');
-
 /* ── character density pools ──────────────────────────────── */
 const DENSITY = [
   ['.', ',', "'", '`'],
@@ -56,10 +10,10 @@ const DENSITY = [
 const EDGE_CHARS = ['.', ',', ':', ';', '-'];
 const GLITCH_CHARS = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '[', ']', '{', '}', '|', '<', '>', '?', '~'];
 
-const EDGE_SIZES = [1, 0.85, 0.70, 0.55, 0.40];
+const EDGE_SIZES = [1, 0.95, 0.88, 0.78, 0.65];
 
 const PAL = {
-  c: ['#0a3a0a', '#008800', '#00cc00', '#00ff00'],
+  c: ['#005500', '#009900', '#00dd00', '#00ff00'],
   a: '#ffff00',
 };
 
@@ -73,52 +27,63 @@ function easeOutBack(t) {
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
-/* ── rasterize text to boolean grid ───────────────────────── */
-function rasterize(text) {
-  const lines = text.toUpperCase().split('\n');
-  const charW = 6, charH = 8;
-  const maxCols = Math.max(...lines.map(l => l.length));
-  const rows = lines.length;
-  const gridW = maxCols * charW;
-  const gridH = rows * charH;
+/* ── rasterize text via canvas font renderer ──────────────── */
+function rasterize(text, targetGridW) {
+  const upper = text.toUpperCase();
+  const tmp = document.createElement('canvas');
+  const tCtx = tmp.getContext('2d');
+
+  // Render text large, then downsample to target grid width
+  const fontSize = 200;
+  tCtx.font = `bold ${fontSize}px "Courier New", Consolas, monospace`;
+  const metrics = tCtx.measureText(upper);
+  const textW = Math.ceil(metrics.width);
+  const textH = Math.ceil(fontSize * 1.2);
+
+  tmp.width = textW;
+  tmp.height = textH;
+  tCtx.font = `bold ${fontSize}px "Courier New", Consolas, monospace`;
+  tCtx.fillStyle = '#fff';
+  tCtx.textBaseline = 'top';
+  tCtx.fillText(upper, 0, fontSize * 0.1);
+
+  const imgData = tCtx.getImageData(0, 0, textW, textH);
+  const pixels = imgData.data;
+
+  // Downsample to grid
+  const gridW = targetGridW;
+  const gridH = Math.max(1, Math.round(gridW * (textH / textW)));
+  const cellPxW = textW / gridW;
+  const cellPxH = textH / gridH;
+
   const grid = Array.from({ length: gridH }, () => new Uint8Array(gridW));
 
-  lines.forEach((line, li) => {
-    for (let ci = 0; ci < line.length; ci++) {
-      const glyph = GLYPHS[line[ci]];
-      if (!glyph) continue;
-      for (let gy = 0; gy < charH; gy++) {
-        for (let gx = 0; gx < charW; gx++) {
-          grid[li * charH + gy][ci * charW + gx] = glyph[gy][gx];
-        }
+  for (let gy = 0; gy < gridH; gy++) {
+    for (let gx = 0; gx < gridW; gx++) {
+      // Sample center of each cell
+      const px = Math.floor(gx * cellPxW + cellPxW / 2);
+      const py = Math.floor(gy * cellPxH + cellPxH / 2);
+      const idx = (py * textW + px) * 4;
+      if (pixels[idx + 3] > 80) {
+        grid[gy][gx] = 1;
       }
     }
-  });
-  return { grid, gridW, gridH };
-}
-
-/* ── adaptive subdivision ─────────────────────────────────── */
-function calcSub(gridW, gridH, canvasW, canvasH) {
-  const textW = canvasW * 0.90;
-  const textH = canvasH * 0.72;
-  const minCell = 7;
-  for (let sub = 5; sub >= 2; sub--) {
-    const cellW = textW / (gridW * sub);
-    const cellH = textH / (gridH * sub);
-    const cell = Math.min(cellW, cellH);
-    if (cell >= minCell) return { sub, cell };
   }
-  const cell = Math.min(textW / (gridW * 2), textH / (gridH * 2));
-  return { sub: 2, cell: Math.max(cell, 6) };
+
+  return { grid, gridW, gridH };
 }
 
 /* ── build cells ──────────────────────────────────────────── */
 function buildCells(text, pal, W, H) {
-  const { grid, gridW, gridH } = rasterize(text);
-  const { sub, cell } = calcSub(gridW, gridH, W, H);
+  // Target ~8px cells, determine grid width from canvas size
+  const targetCell = 9;
+  const usableW = W * 0.88;
+  const targetGridW = Math.floor(usableW / targetCell);
+  const { grid, gridW, gridH } = rasterize(text, targetGridW);
 
-  const totalW = gridW * sub * cell;
-  const totalH = gridH * sub * cell;
+  const cell = usableW / gridW;
+  const totalW = gridW * cell;
+  const totalH = gridH * cell;
   const ox = (W - totalW) / 2;
   const oy = (H - totalH) / 2;
   const cx = W / 2;
@@ -129,66 +94,58 @@ function buildCells(text, pal, W, H) {
   for (let gy = 0; gy < gridH; gy++) {
     for (let gx = 0; gx < gridW; gx++) {
       if (!grid[gy][gx]) continue;
-      for (let sy = 0; sy < sub; sy++) {
-        for (let sx = 0; sx < sub; sx++) {
-          const px = ox + (gx * sub + sx) * cell;
-          const py = oy + (gy * sub + sy) * cell;
 
-          // edge detection (8-neighbor)
-          let edges = 0;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              if (dx === 0 && dy === 0) continue;
-              const ngy = gy + dy, ngx = gx + dx;
-              if (ngy < 0 || ngy >= gridH || ngx < 0 || ngx >= gridW || !grid[ngy][ngx]) {
-                edges++;
-              }
-            }
+      const px = ox + gx * cell;
+      const py = oy + gy * cell;
+
+      // edge detection (8-neighbor)
+      let edges = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const ngy = gy + dy, ngx = gx + dx;
+          if (ngy < 0 || ngy >= gridH || ngx < 0 || ngx >= gridW || !grid[ngy][ngx]) {
+            edges++;
           }
-          // Only count edge for sub-cells at the grid boundary
-          const isSubEdge = sx === 0 || sx === sub - 1 || sy === 0 || sy === sub - 1;
-          const edgeCount = isSubEdge ? Math.min(edges, 4) : 0;
-          const sizeMul = EDGE_SIZES[edgeCount];
-
-          // directional lighting
-          const nx = (gx * sub + sx) / (gridW * sub);
-          const ny = (gy * sub + sy) / (gridH * sub);
-          const light = 1 - (nx * 0.35 + ny * 0.55);
-          const noise = (Math.random() - 0.5) * 0.22;
-          const ci = clamp(0, 3, Math.floor((light + noise) * 3.99));
-
-          const isEdge = edgeCount >= 3;
-          const pool = isEdge ? EDGE_CHARS : DENSITY[ci];
-          const ch = pick(pool);
-
-          // assembly animation
-          const distFromCenter = Math.hypot(px - cx, py - cy);
-          const maxDist = Math.hypot(W, H) / 2;
-          const angle = Math.random() * Math.PI * 2;
-          const flyDist = 400 + Math.random() * 350;
-          const stagger = (distFromCenter / maxDist) * 0.6 + Math.random() * 0.15;
-
-          cells.push({
-            x: px, y: py,
-            size: cell * sizeMul,
-            ch, ci, pool,
-            color: pal.c[ci],
-            // assembly
-            startX: px + Math.cos(angle) * flyDist,
-            startY: py + Math.sin(angle) * flyDist,
-            stagger,
-            // drift
-            driftPhaseX: Math.random() * Math.PI * 2,
-            driftPhaseY: Math.random() * Math.PI * 2,
-            driftFreqX: 0.3 + Math.random() * 0.4,
-            driftFreqY: 0.3 + Math.random() * 0.4,
-          });
         }
       }
+      const edgeCount = Math.min(edges, 4);
+      const sizeMul = EDGE_SIZES[edgeCount];
+
+      // directional lighting
+      const nx = gx / gridW;
+      const ny = gy / gridH;
+      const light = 1 - (nx * 0.35 + ny * 0.55);
+      const noise = (Math.random() - 0.5) * 0.22;
+      const ci = clamp(0, 3, Math.floor((light + noise) * 3.99));
+
+      const isEdge = edgeCount >= 3;
+      const pool = isEdge ? EDGE_CHARS : DENSITY[ci];
+      const ch = pick(pool);
+
+      // assembly animation
+      const distFromCenter = Math.hypot(px - cx, py - cy);
+      const maxDist = Math.hypot(W, H) / 2;
+      const angle = Math.random() * Math.PI * 2;
+      const flyDist = 400 + Math.random() * 350;
+      const stagger = (distFromCenter / maxDist) * 0.6 + Math.random() * 0.15;
+
+      cells.push({
+        x: px, y: py,
+        size: cell * sizeMul,
+        ch, ci, pool,
+        color: pal.c[ci],
+        startX: px + Math.cos(angle) * flyDist,
+        startY: py + Math.sin(angle) * flyDist,
+        stagger,
+        driftPhaseX: Math.random() * Math.PI * 2,
+        driftPhaseY: Math.random() * Math.PI * 2,
+        driftFreqX: 0.3 + Math.random() * 0.4,
+        driftFreqY: 0.3 + Math.random() * 0.4,
+      });
     }
   }
 
-  // Sort by size descending
   cells.sort((a, b) => b.size - a.size);
   return cells;
 }
@@ -286,7 +243,6 @@ const AsciiHeader = () => {
         let x = c.startX + (c.x - c.startX) * eased;
         let y = c.startY + (c.y - c.startY) * eased;
 
-        // Ambient drift after assembly
         if (assemblyT >= 1) {
           x += Math.sin(time * c.driftFreqX + c.driftPhaseX) * 1.5;
           y += Math.cos(time * c.driftFreqY + c.driftPhaseY) * 1.5;
@@ -297,7 +253,6 @@ const AsciiHeader = () => {
         const fontSize = c.size * 0.82;
         if (fontSize < 3) continue;
 
-        // Check glitch
         const glitchEntry = glitchCells.find(g => g.cell === c && now < g.until);
         const ch = glitchEntry ? pick(GLITCH_CHARS) : c.ch;
         const color = glitchEntry ? PAL.a : c.color;
@@ -359,7 +314,7 @@ const AsciiHeader = () => {
       ref={containerRef}
       style={{
         width: '100%',
-        height: '240px',
+        height: '350px',
         position: 'relative',
         overflow: 'hidden',
         background: '#000000',
