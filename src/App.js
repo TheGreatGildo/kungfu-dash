@@ -13,14 +13,14 @@ import { CONTRACT_LIBRARY, CONTRACT_NAMES } from './contracts';
 
 // Default contract addresses (some may be missing)
 const DEFAULT_ADDRESSES = {
-  AlchemistV3: '0xb3770D0802515088F85a7aFAfE3f775f8B218249',
-  Transmuter: '0xFe7CaF984eae3B741f335c81983A60443552939e',
+  AlchemistV3: '0x61fe8dBBff8cf864062fdA593B55bbE1A31cA238',
+  Transmuter: '0x1E57e4c164642e8Ef1c1aDD28046Ee6cE1C919b9',
   AlchemistCurator: '0xD1c54329A3eD6a6Dfb8ebe2763cA91feA2BED925',
-  AlchemistV3Position: '0x504bc3E638e2cF2a48f969914dAC35FAc84aFc7c',
+  AlchemistV3Position: '0x16B8b0f42ACB9B6666e93978C8BEBAa991EB5927',
   AlchemistAllocator: '0xee299b6206e288ba2b38df5adc63d25e8c4802fe',
   AlchemistTokenVault: '0x363b8C30Ea88639d5567d01bf0FB4a359490EBc9',
-  AaveV3OPUSDCStrategy: '0x90BF915dc6BBFE3E306D645FB9879912859d0a68',
-  MoonwellUSDCStrategy: '0x1EE3C0bc7E6d5bc5CBA345606b2856de8623F8d5',
+  AaveV3OPUSDCStrategy: '0x1a5F2bF82716F283f40E1f7540933F2225508175',
+  MoonwellUSDCStrategy: '0xfED5543237968d39dbfc067bAfEe7e878a0f89F9',
   // Other contracts will need addresses provided
 };
 

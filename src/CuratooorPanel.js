@@ -7,15 +7,15 @@ import { formatUnits } from 'viem';
 const DEPLOYMENTS = {
   mytVault: {
     label: 'MYT Vault (Morpho Vault)',
-    address: '0xd356aFd1f2c66cDCcACcDBF6501770017e5D43Fa',
+    address: '0xf9b479281bd85C85FbBaEB1B82A4Ed260c0EbD1b',
   },
   mockAlUsd: {
     label: 'mock alUSD (kungfu)',
-    address: '0x894ED1E34F8f4E6B3951383d72095650028F818e',
+    address: '0x37f51eD6FC26F9Dcd16876CEdE4f148C8bA4F863',
   },
   vaultFactory: {
     label: 'VaultFactory',
-    address: '0x655147Ff7259eeCbeFA7bbaeD69A4B7c1Bc90628',
+    address: '0xfDDf7a49B7E1B183Ee604489bCf7DB072c90b298',
   },
   alchemistAllocator: {
     label: 'AlchemistAllocator',
@@ -31,12 +31,12 @@ const STRATEGY_PRESETS = [
   {
     key: 'AaveV3OPUSDCStrategy',
     label: 'Aave V3 OP USDC Strategy',
-    fallback: '0x90BF915dc6BBFE3E306D645FB9879912859d0a68',
+    fallback: '0x1a5F2bF82716F283f40E1f7540933F2225508175',
   },
   {
     key: 'MoonwellUSDCStrategy',
     label: 'Moonwell OP USDC Strategy',
-    fallback: '0x1EE3C0bc7E6d5bc5CBA345606b2856de8623F8d5',
+    fallback: '0xfED5543237968d39dbfc067bAfEe7e878a0f89F9',
   },
 ];
 
