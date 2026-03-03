@@ -59,8 +59,8 @@ const GLITCH_CHARS = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '[', ']'
 const EDGE_SIZES = [1, 0.85, 0.70, 0.55, 0.40];
 
 const PAL = {
-  c: ['#5a3a22', '#9b6a40', '#d8a568', '#f5e0c0'],
-  a: '#40e0d0',
+  c: ['#0a3a0a', '#008800', '#00cc00', '#00ff00'],
+  a: '#ffff00',
 };
 
 /* ── helpers ───────────────────────────────────────────────── */
@@ -97,30 +97,11 @@ function rasterize(text) {
   return { grid, gridW, gridH };
 }
 
-/* ── dilate grid (thicken strokes by 1 cell) ──────────────── */
-function dilate(grid, w, h) {
-  const out = Array.from({ length: h }, () => new Uint8Array(w));
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (grid[y][x]) { out[y][x] = 1; continue; }
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const ny = y + dy, nx = x + dx;
-          if (ny >= 0 && ny < h && nx >= 0 && nx < w && grid[ny][nx]) {
-            out[y][x] = 1;
-          }
-        }
-      }
-    }
-  }
-  return out;
-}
-
 /* ── adaptive subdivision ─────────────────────────────────── */
 function calcSub(gridW, gridH, canvasW, canvasH) {
   const textW = canvasW * 0.90;
   const textH = canvasH * 0.72;
-  const minCell = 10;
+  const minCell = 7;
   for (let sub = 5; sub >= 2; sub--) {
     const cellW = textW / (gridW * sub);
     const cellH = textH / (gridH * sub);
@@ -134,7 +115,6 @@ function calcSub(gridW, gridH, canvasW, canvasH) {
 /* ── build cells ──────────────────────────────────────────── */
 function buildCells(text, pal, W, H) {
   const { grid, gridW, gridH } = rasterize(text);
-  const dilated = dilate(grid, gridW, gridH);
   const { sub, cell } = calcSub(gridW, gridH, W, H);
 
   const totalW = gridW * sub * cell;
@@ -148,7 +128,7 @@ function buildCells(text, pal, W, H) {
 
   for (let gy = 0; gy < gridH; gy++) {
     for (let gx = 0; gx < gridW; gx++) {
-      if (!dilated[gy][gx]) continue;
+      if (!grid[gy][gx]) continue;
       for (let sy = 0; sy < sub; sy++) {
         for (let sx = 0; sx < sub; sx++) {
           const px = ox + (gx * sub + sx) * cell;
@@ -160,7 +140,7 @@ function buildCells(text, pal, W, H) {
             for (let dx = -1; dx <= 1; dx++) {
               if (dx === 0 && dy === 0) continue;
               const ngy = gy + dy, ngx = gx + dx;
-              if (ngy < 0 || ngy >= gridH || ngx < 0 || ngx >= gridW || !dilated[ngy][ngx]) {
+              if (ngy < 0 || ngy >= gridH || ngx < 0 || ngx >= gridW || !grid[ngy][ngx]) {
                 edges++;
               }
             }
@@ -330,7 +310,7 @@ const AsciiHeader = () => {
       offCtx.globalAlpha = 1;
 
       // Composite to main canvas
-      ctx.fillStyle = '#050505';
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, W, H);
 
       // Glow layer
@@ -382,7 +362,7 @@ const AsciiHeader = () => {
         height: '240px',
         position: 'relative',
         overflow: 'hidden',
-        background: '#050505',
+        background: '#000000',
         borderRadius: '4px',
         marginBottom: '20px',
       }}
