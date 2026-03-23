@@ -1,0 +1,2 @@
+(self.webpackChunkv3_admin_dashboard=self.webpackChunkv3_admin_dashboard||[]).push([[830],{4148:e=>{e.exports={}},66235:e=>{const a={setGlobalProperty:()=>{},track:()=>{},trackEvent:()=>{},identify:()=>{},reset:()=>{},flush:()=>{},setEnabled:()=>{},isEnabled:()=>!1,enable:()=>{},disable:()=>{},send:()=>{},init:()=>{}};e.exports={analytics:a},e.exports.default=e.exports,e.exports.analytics=a}}]);
+//# sourceMappingURL=830.4eb5baba.chunk.js.map

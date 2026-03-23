@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkv3_admin_dashboard=self.webpackChunkv3_admin_dashboard||[]).push([[2821],{62821:(n,e,a)=>{a.r(e),a.d(e,{chevronBottomSvg:()=>o});var l,d=a(57528);const o=(0,a(37022).JW)(l||(l=(0,d.A)(['<svg fill="none" viewBox="0 0 16 16">\n  <path\n    fill="currentColor"\n    fill-rule="evenodd"\n    d="M1.46 4.96a1 1 0 0 1 1.41 0L8 10.09l5.13-5.13a1 1 0 1 1 1.41 1.41l-5.83 5.84a1 1 0 0 1-1.42 0L1.46 6.37a1 1 0 0 1 0-1.41Z"\n    clip-rule="evenodd"\n  />\n</svg>'])))}}]);
+//# sourceMappingURL=2821.5b0ab90f.chunk.js.map

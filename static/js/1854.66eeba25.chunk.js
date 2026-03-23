@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkv3_admin_dashboard=self.webpackChunkv3_admin_dashboard||[]).push([[1854],{71854:(a,s,n)=>{n.r(s),n.d(s,{cursorSvg:()=>e});var r,d=n(57528);const e=(0,n(37022).JW)(r||(r=(0,d.A)([' <svg fill="none" viewBox="0 0 13 4">\n  <path fill="currentColor" d="M.5 0h12L8.9 3.13a3.76 3.76 0 0 1-4.8 0L.5 0Z" />\n</svg>'])))}}]);
+//# sourceMappingURL=1854.66eeba25.chunk.js.map
