@@ -12,7 +12,7 @@ import CuratooorPanel from './CuratooorPanel';
 import AsciiHeader from './AsciiHeader';
 import { CONTRACT_LIBRARY, CONTRACT_NAMES } from './contracts';
 
-// Default contract addresses (some may be missing)
+// Default contract addresses matching the OP deployment manifest
 const DEFAULT_ADDRESSES = {
   AlchemistV3_alUSD: '0x61fe8dBBff8cf864062fdA593B55bbE1A31cA238',
   AlchemistV3_alETH: '0x45550d91AAd47281F5FDF3d832C332D5bE5072Af',
@@ -22,11 +22,13 @@ const DEFAULT_ADDRESSES = {
   AlchemistV3Position_alETH: '0x9089e912D2a007bE64fD9C338A8F8A13E677a0a4',
   AlchemistCurator: '0xD1c54329A3eD6a6Dfb8ebe2763cA91feA2BED925',
   AlchemistAllocator: '0xee299b6206e288ba2b38df5adc63d25e8c4802fe',
-  AlchemistTokenVault: '0x363b8C30Ea88639d5567d01bf0FB4a359490EBc9',
+  AlchemistTokenVault: '0x08b83b96e382666E6f77b0f3174e9815b33a2a1f',
+  AlchemistETHVault: '0x60482BdcA514B47B76dc1400f613f667900C96F1',
   AaveV3OPUSDCStrategy: '0x1a5F2bF82716F283f40E1f7540933F2225508175',
   MoonwellUSDCStrategy: '0xfED5543237968d39dbfc067bAfEe7e878a0f89F9',
   MoonwellWETHStrategy: '0x0525aF9A464828c4F52C5B051DF7eeFf8a3B43C7',
-  // Other contracts will need addresses provided
+  MYTStrategy_USDC: '0xf9b479281bd85C85FbBaEB1B82A4Ed260c0EbD1b',
+  MYTStrategy_WETH: '0x715b82eD525126af05Acf6d3e60A6012393DF8F2',
 };
 
 // Helper function to identify admin functions (functions with permission modifiers)
@@ -629,13 +631,23 @@ function AppContent() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showCuratooor, setShowCuratooor] = useState(false);
   const [contractAddresses, setContractAddresses] = useState(() => {
-    // Initialize with default addresses
+    let saved = {};
+    try {
+      const stored = localStorage.getItem('kungfu-dash-addresses');
+      if (stored) saved = JSON.parse(stored);
+    } catch (e) {}
     const addresses = {};
     CONTRACT_NAMES.forEach(name => {
-      addresses[name] = DEFAULT_ADDRESSES[name] || '0xPLACEHOLDER';
+      addresses[name] = saved[name] || DEFAULT_ADDRESSES[name] || '0xPLACEHOLDER';
     });
     return addresses;
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('kungfu-dash-addresses', JSON.stringify(contractAddresses));
+    } catch (e) {}
+  }, [contractAddresses]);
 
   const handleContractSelect = (contractName) => {
     setSelectedContract(contractName);

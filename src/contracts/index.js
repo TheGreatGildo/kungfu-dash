@@ -68,6 +68,8 @@ const Transmuter_alUSD = { ...Transmuter, name: 'Transmuter_alUSD', title: 'Tran
 const Transmuter_alETH = { ...Transmuter, name: 'Transmuter_alETH', title: 'Transmuter (alETH)' };
 const AlchemistV3Position_alUSD = { ...AlchemistV3Position, name: 'AlchemistV3Position_alUSD', title: 'AlchemistV3Position (alUSD)' };
 const AlchemistV3Position_alETH = { ...AlchemistV3Position, name: 'AlchemistV3Position_alETH', title: 'AlchemistV3Position (alETH)' };
+const MYTStrategy_USDC = { ...MYTStrategy, name: 'MYTStrategy_USDC', title: 'USDC MYT Vault' };
+const MYTStrategy_WETH = { ...MYTStrategy, name: 'MYTStrategy_WETH', title: 'WETH MYT Vault' };
 
 export const CONTRACT_NAMES = [
   "AlchemistV3_alUSD",
@@ -82,7 +84,8 @@ export const CONTRACT_NAMES = [
   "AlchemistGate",
   "AlchemistStrategyClassifier",
   "AlchemistTokenVault",
-  "MYTStrategy",
+  "MYTStrategy_USDC",
+  "MYTStrategy_WETH",
   "PerpetualGauge",
   "ZeroXSwapVerifier",
   "Whitelist",
@@ -117,7 +120,8 @@ export const CONTRACT_LIBRARY = {
   AlchemistGate,
   AlchemistStrategyClassifier,
   AlchemistTokenVault,
-  MYTStrategy,
+  MYTStrategy_USDC,
+  MYTStrategy_WETH,
   PerpetualGauge,
   ZeroXSwapVerifier,
   Whitelist,
