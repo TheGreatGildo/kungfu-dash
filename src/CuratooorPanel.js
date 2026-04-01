@@ -61,6 +61,104 @@ const STRATEGY_PRESETS = [
   },
 ];
 
+const MORPHO_VAULT_ADMIN_ABI = [
+  {
+    type: 'function',
+    name: 'setCurator',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'newCurator',
+        type: 'address',
+      },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'setIsAllocator',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'account',
+        type: 'address',
+      },
+      {
+        name: 'newIsAllocator',
+        type: 'bool',
+      },
+    ],
+    outputs: [],
+  },
+];
+
+const ALCHEMIST_CURATOR_ADMIN_ABI = [
+  {
+    type: 'function',
+    name: 'submitSetAllocator',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'myt',
+        type: 'address',
+      },
+      {
+        name: 'allocator',
+        type: 'address',
+      },
+      {
+        name: 'v',
+        type: 'bool',
+      },
+    ],
+    outputs: [],
+  },
+];
+
+const MORPHO_VAULT_STATUS_ABI = [
+  {
+    type: 'function',
+    name: 'owner',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+      },
+    ],
+  },
+  {
+    type: 'function',
+    name: 'curator',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+      },
+    ],
+  },
+  {
+    type: 'function',
+    name: 'isAllocator',
+    stateMutability: 'view',
+    inputs: [
+      {
+        name: 'account',
+        type: 'address',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'bool',
+      },
+    ],
+  },
+];
+
 const isAddress = (value) => typeof value === 'string' && /^0x[a-fA-F0-9]{40}$/.test(value ?? '');
 
 const formatTokenAmount = (value, decimals = 18, maximumFractionDigits = 2) => {
@@ -164,6 +262,82 @@ const FieldInput = ({ field, value, onChange }) => {
       value={value ?? ''}
       onChange={(e) => onChange(field.name, e.target.value)}
     />
+  );
+};
+
+const formatAddressOrUnset = (value) => {
+  if (!value || !isAddress(value) || value === '0x0000000000000000000000000000000000000000') {
+    return 'Unset';
+  }
+
+  return value;
+};
+
+const MorphoVaultAdminStatus = ({ vaultOptions }) => {
+  const [selectedVault, setSelectedVault] = useState(vaultOptions[0]?.value ?? '');
+
+  useEffect(() => {
+    if (!selectedVault && vaultOptions[0]?.value) {
+      setSelectedVault(vaultOptions[0].value);
+    }
+  }, [selectedVault, vaultOptions]);
+
+  const isVaultReady = isAddress(selectedVault);
+
+  const statusContracts = useMemo(() => {
+    if (!isVaultReady) return [];
+
+    return [
+      {
+        address: selectedVault,
+        abi: MORPHO_VAULT_STATUS_ABI,
+        functionName: 'owner',
+      },
+      {
+        address: selectedVault,
+        abi: MORPHO_VAULT_STATUS_ABI,
+        functionName: 'curator',
+      },
+    ];
+  }, [isVaultReady, selectedVault]);
+
+  const { data: statusResults } = useReadContracts({
+    contracts: statusContracts,
+    query: { enabled: statusContracts.length > 0 },
+  });
+
+  const ownerAddress = statusResults?.[0]?.result;
+  const curatorAddress = statusResults?.[1]?.result;
+
+  return (
+    <div className="snapshot-card">
+      <div className="snapshot-card-header">
+        <h4>Morpho Vault Status</h4>
+        <span>{selectedVault || 'Select a vault'}</span>
+      </div>
+      <div className="params-grid" style={{ marginBottom: '15px' }}>
+        <div className="param-group">
+          <label className="terminal-label">Vault</label>
+          <select
+            className="terminal-input terminal-select"
+            value={selectedVault}
+            onChange={(e) => setSelectedVault(e.target.value)}
+          >
+            {vaultOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="terminal-line">
+        <span className="contract-label">Owner:</span> {formatAddressOrUnset(ownerAddress)}
+      </div>
+      <div className="terminal-line">
+        <span className="contract-label">Curator:</span> {formatAddressOrUnset(curatorAddress)}
+      </div>
+    </div>
   );
 };
 
@@ -455,11 +629,12 @@ const ActionCard = ({
   contractName,
   functionName,
   fields,
+  abi,
   contractAddress,
   disabledReason,
   deriveAddressField,
 }) => {
-  const contract = CONTRACT_LIBRARY[contractName];
+  const contractAbi = abi || CONTRACT_LIBRARY[contractName]?.abi;
   const [formValues, setFormValues] = useState(() =>
     Object.fromEntries(fields.map((field) => [field.name, field.defaultValue ?? ''])),
   );
@@ -479,7 +654,7 @@ const ActionCard = ({
     ? manualAddress || formValues[deriveAddressField]
     : manualAddress || contractAddress;
 
-  const isReady = contract && resolvedAddress && resolvedAddress !== '0xPLACEHOLDER';
+  const isReady = contractAbi && resolvedAddress && resolvedAddress !== '0xPLACEHOLDER';
   const isDisabled = !isReady || !!disabledReason;
   const mergedReason = !isReady
     ? 'Contract address missing. Populate the address or select a strategy before executing.'
@@ -492,7 +667,7 @@ const ActionCard = ({
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!isReady || !contract) {
+    if (!isReady || !contractAbi) {
       return;
     }
 
@@ -501,7 +676,7 @@ const ActionCard = ({
 
     writeContract({
       address: resolvedAddress,
-      abi: contract.abi,
+      abi: contractAbi,
       functionName,
       args: args.length > 0 ? args : undefined,
     });
@@ -590,6 +765,7 @@ const ActionRenderer = ({ action, addresses, strategyOptions }) => {
       contractName={action.contractName}
       functionName={action.functionName}
       fields={action.fields}
+      abi={action.abi}
       contractAddress={contractAddress}
       deriveAddressField={action.deriveAddressField}
       disabledReason={
@@ -649,6 +825,23 @@ const CuratooorPanel = ({ addresses, onBack }) => {
   );
 
   const deploymentCards = Object.values(DEPLOYMENTS);
+  const morphoVaultOptions = useMemo(
+    () => [
+      {
+        label: DEPLOYMENTS.mytVaultUSDC.label,
+        value: addresses?.MYTStrategy_USDC && addresses.MYTStrategy_USDC !== '0xPLACEHOLDER'
+          ? addresses.MYTStrategy_USDC
+          : DEPLOYMENTS.mytVaultUSDC.address,
+      },
+      {
+        label: DEPLOYMENTS.mytVaultWETH.label,
+        value: addresses?.MYTStrategy_WETH && addresses.MYTStrategy_WETH !== '0xPLACEHOLDER'
+          ? addresses.MYTStrategy_WETH
+          : DEPLOYMENTS.mytVaultWETH.address,
+      },
+    ],
+    [addresses],
+  );
 
   const sections = useMemo(() => {
     const mytVaultAddress = DEPLOYMENTS.mytVaultUSDC.address;
@@ -1035,8 +1228,100 @@ const CuratooorPanel = ({ addresses, onBack }) => {
           },
         ],
       },
+      {
+        title: 'Morpho Vault Admin',
+        description: 'Owner and timelock level controls on the Morpho V2 vault contracts.',
+        statusPanel: 'morphoVaultAdmin',
+        actions: [
+          {
+            title: 'Submit Vault Allocator Change',
+            description: 'Admin action. Queues `setIsAllocator(address,bool)` on the selected Morpho vault via `submitSetAllocator(address myt,address allocator,bool v)`.',
+            contractName: 'AlchemistCurator',
+            abi: ALCHEMIST_CURATOR_ADMIN_ABI,
+            functionName: 'submitSetAllocator',
+            fields: [
+              {
+                name: 'myt',
+                label: 'Morpho Vault',
+                type: 'select',
+                valueType: 'address',
+                options: morphoVaultOptions,
+                defaultValue: morphoVaultOptions[0]?.value ?? '',
+              },
+              {
+                name: 'allocator',
+                label: 'Allocator Account',
+                type: 'address',
+                placeholder: '0x...',
+              },
+              {
+                name: 'v',
+                label: 'Allocator Enabled',
+                type: 'bool',
+                placeholder: 'false',
+              },
+            ],
+          },
+          {
+            title: 'Set Vault Curator',
+            description: 'Owner only. Calls `setCurator(address)` on the selected Morpho vault.',
+            contractName: 'MorphoV2Vault',
+            abi: MORPHO_VAULT_ADMIN_ABI,
+            functionName: 'setCurator',
+            deriveAddressField: 'vaultAddress',
+            fields: [
+              {
+                name: 'vaultAddress',
+                label: 'Morpho Vault',
+                type: 'select',
+                valueType: 'address',
+                options: morphoVaultOptions,
+                defaultValue: morphoVaultOptions[0]?.value ?? '',
+                omitFromArgs: true,
+              },
+              {
+                name: 'newCurator',
+                label: 'New Curator',
+                type: 'address',
+                placeholder: '0x...',
+              },
+            ],
+          },
+          {
+            title: 'Set Vault Allocator',
+            description: '🔒 Timelocked. Calls `setIsAllocator(address,bool)` on the selected Morpho vault.',
+            contractName: 'MorphoV2Vault',
+            abi: MORPHO_VAULT_ADMIN_ABI,
+            functionName: 'setIsAllocator',
+            deriveAddressField: 'vaultAddress',
+            fields: [
+              {
+                name: 'vaultAddress',
+                label: 'Morpho Vault',
+                type: 'select',
+                valueType: 'address',
+                options: morphoVaultOptions,
+                defaultValue: morphoVaultOptions[0]?.value ?? '',
+                omitFromArgs: true,
+              },
+              {
+                name: 'account',
+                label: 'Allocator Account',
+                type: 'address',
+                placeholder: '0x...',
+              },
+              {
+                name: 'newIsAllocator',
+                label: 'Allocator Enabled',
+                type: 'bool',
+                placeholder: 'false',
+              },
+            ],
+          },
+        ],
+      },
     ];
-  }, [strategyOptions]);
+  }, [morphoVaultOptions, strategyOptions]);
 
   if (!isConnected) {
     return (
@@ -1097,6 +1382,11 @@ const CuratooorPanel = ({ addresses, onBack }) => {
             <h3>{section.title}</h3>
             <p>{section.description}</p>
           </div>
+          {section.statusPanel === 'morphoVaultAdmin' && (
+            <div style={{ marginBottom: '20px' }}>
+              <MorphoVaultAdminStatus vaultOptions={morphoVaultOptions} />
+            </div>
+          )}
           <div className="curatooor-grid">
             {section.actions.map((action) => {
               if (action.type === 'sequence') {
