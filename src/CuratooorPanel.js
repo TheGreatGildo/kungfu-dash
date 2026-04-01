@@ -180,42 +180,46 @@ const CuratooorSnapshot = ({ addresses, strategyOptions }) => {
   const alchemistAddress = addresses?.AlchemistV3_alUSD;
   const transmuterAddress = addresses?.Transmuter_alUSD;
   const gaugeAddress = addresses?.PerpetualGauge;
+  const alchemistAbi = CONTRACT_LIBRARY.AlchemistV3_alUSD?.abi;
+  const transmuterAbi = CONTRACT_LIBRARY.Transmuter_alUSD?.abi;
+  const gaugeAbi = CONTRACT_LIBRARY.PerpetualGauge?.abi;
+  const strategyAbi = CONTRACT_LIBRARY.MYTStrategy_USDC?.abi || CONTRACT_LIBRARY.MYTStrategy_WETH?.abi;
 
-  const isAlchemistReady = isAddress(alchemistAddress);
-  const isTransmuterReady = isAddress(transmuterAddress);
-  const isGaugeReady = isAddress(gaugeAddress);
+  const isAlchemistReady = isAddress(alchemistAddress) && Boolean(alchemistAbi);
+  const isTransmuterReady = isAddress(transmuterAddress) && Boolean(transmuterAbi);
+  const isGaugeReady = isAddress(gaugeAddress) && Boolean(gaugeAbi);
 
   const { data: totalValue } = useReadContract({
     address: isAlchemistReady ? alchemistAddress : undefined,
-    abi: CONTRACT_LIBRARY.AlchemistV3.abi,
+    abi: alchemistAbi,
     functionName: 'totalValue',
     query: { enabled: isAlchemistReady },
   });
 
   const { data: totalDebt } = useReadContract({
     address: isAlchemistReady ? alchemistAddress : undefined,
-    abi: CONTRACT_LIBRARY.AlchemistV3.abi,
+    abi: alchemistAbi,
     functionName: 'totalDebt',
     query: { enabled: isAlchemistReady },
   });
 
   const { data: transmuterTotalLocked } = useReadContract({
     address: isTransmuterReady ? transmuterAddress : undefined,
-    abi: CONTRACT_LIBRARY.Transmuter.abi,
+    abi: transmuterAbi,
     functionName: 'totalLocked',
     query: { enabled: isTransmuterReady },
   });
 
   const { data: transmuterDepositCap } = useReadContract({
     address: isTransmuterReady ? transmuterAddress : undefined,
-    abi: CONTRACT_LIBRARY.Transmuter.abi,
+    abi: transmuterAbi,
     functionName: 'depositCap',
     query: { enabled: isTransmuterReady },
   });
 
   const allocationsQuery = useReadContract({
     address: isGaugeReady ? gaugeAddress : undefined,
-    abi: CONTRACT_LIBRARY.PerpetualGauge.abi,
+    abi: gaugeAbi,
     functionName: 'getCurrentAllocations',
     args: [parsedYtId],
     query: { enabled: isGaugeReady },
@@ -238,24 +242,24 @@ const CuratooorSnapshot = ({ addresses, strategyOptions }) => {
       if (address) {
         contracts.push({
           address,
-          abi: CONTRACT_LIBRARY.MYTStrategy.abi,
+          abi: strategyAbi,
           functionName: 'realAssets',
         });
         contracts.push({
           address,
-          abi: CONTRACT_LIBRARY.MYTStrategy.abi,
+          abi: strategyAbi,
           functionName: 'estApy',
         });
         contracts.push({
           address,
-          abi: CONTRACT_LIBRARY.MYTStrategy.abi,
+          abi: strategyAbi,
           functionName: 'killSwitch',
         });
       }
     });
 
     return { contracts, meta };
-  }, [strategyOptions]);
+  }, [strategyAbi, strategyOptions]);
 
   const strategyBatchResults = useReadContracts({
     contracts: strategyContractBatch.contracts,

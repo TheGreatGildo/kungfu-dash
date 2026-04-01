@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { WagmiProvider, useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, createConfig } from 'wagmi';
+import { WagmiProvider, useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useConnect, useDisconnect, createConfig } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { optimism } from 'wagmi/chains';
 import { http } from 'wagmi';
-import { injected, metaMask, coinbaseWallet, walletConnect } from 'wagmi/connectors';
+import { injected, metaMask } from 'wagmi/connectors';
 import '@rainbow-me/rainbowkit/styles.css';
 import './App.css';
 import CuratooorPanel from './CuratooorPanel';
@@ -30,6 +29,10 @@ const DEFAULT_ADDRESSES = {
   MYTStrategy_USDC: '0xf9b479281bd85C85FbBaEB1B82A4Ed260c0EbD1b',
   MYTStrategy_WETH: '0x715b82eD525126af05Acf6d3e60A6012393DF8F2',
 };
+
+// Dev flag for browsing the dashboard without connecting a wallet.
+// (for viewing the dashboard without connecting a wallet)
+const BYPASS_WALLET_REQUIRED = false;
 
 // Helper function to identify admin functions (functions with permission modifiers)
 // Based on common patterns: set*, pause*, accept*, transfer*, renounce*, etc.
@@ -349,6 +352,46 @@ function WriteFunction({ contractName, func, contractAddress }) {
   );
 }
 
+function MetaMaskConnectButton() {
+  const { isConnected } = useAccount();
+  const { connectors, connect, error, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
+
+  const metaMaskConnector =
+    connectors.find((connector) => connector.id === 'metaMask') ||
+    connectors.find((connector) => connector.name.toLowerCase().includes('metamask')) ||
+    connectors.find((connector) => connector.id === 'injected');
+
+  const handleClick = () => {
+    if (!metaMaskConnector) {
+      window.open('https://metamask.io/download/', '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (isConnected) {
+      disconnect();
+      return;
+    }
+
+    connect({ connector: metaMaskConnector });
+  };
+
+  return (
+    <>
+      <button onClick={handleClick} disabled={isPending} className="terminal-button">
+        {isConnected
+          ? '[DISCONNECT WALLET]'
+          : isPending
+            ? '[CONNECTING METAMASK...]'
+            : metaMaskConnector
+              ? '[CONNECT METAMASK]'
+              : '[INSTALL METAMASK]'}
+      </button>
+      {error && <div className="terminal-error">ERROR: {error.message}</div>}
+    </>
+  );
+}
+
 // Contract section component
 function ContractSection({ contractName, contract, contractAddress, onAddressChange, onBack, onAddressReset }) {
   const [localAddress, setLocalAddress] = useState(contractAddress || '');
@@ -627,6 +670,8 @@ function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelS
 // Main App component
 function AppContent() {
   const { address, isConnected } = useAccount();
+  const canBrowseWithoutWallet = BYPASS_WALLET_REQUIRED;
+  const hasDashboardAccess = canBrowseWithoutWallet || isConnected;
   const [selectedContract, setSelectedContract] = useState(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showCuratooor, setShowCuratooor] = useState(false);
@@ -702,8 +747,13 @@ function AppContent() {
             <span className="terminal-text">Wallet Status:</span>
           </div>
           <div className="connect-wrapper">
-            <ConnectButton />
+            <MetaMaskConnectButton />
           </div>
+          {canBrowseWithoutWallet && !isConnected && (
+            <div className="terminal-line">
+              <span className="terminal-text">Browse mode enabled. Wallet connection is optional.</span>
+            </div>
+          )}
           {isConnected && (
             <div className="terminal-line">
               <span className="terminal-success">[CONNECTED]</span>
@@ -712,7 +762,7 @@ function AppContent() {
           )}
         </div>
 
-        {!isConnected ? (
+        {!hasDashboardAccess ? (
           <div className="terminal-box">
             <div className="terminal-line">
               <span className="terminal-text">Please connect wallet to access dashboard</span>
@@ -765,15 +815,11 @@ function AppContent() {
   );
 }
 
-// Configure RainbowKit with browser wallet fallback
-// Create config with explicit connectors including browser wallet fallback
 const config = createConfig({
   chains: [optimism],
   connectors: [
     metaMask(),
-    coinbaseWallet({ appName: 'Alchemix V3 Admin Dashboard' }),
-    walletConnect({ projectId: 'YOUR_PROJECT_ID' }),
-    injected(), // Browser wallet fallback - detects any injected wallet (MetaMask, Rabby, etc.)
+    injected(),
   ],
   transports: {
     [optimism.id]: http(),
