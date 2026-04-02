@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts } from 'wagmi';
 import { CONTRACT_LIBRARY } from './contracts';
-import { formatUnits } from 'viem';
+import { encodeFunctionData, formatUnits } from 'viem';
 
 const DEPLOYMENTS = {
   mytVaultUSDC: {
@@ -86,6 +86,22 @@ const MORPHO_VAULT_ADMIN_ABI = [
       {
         name: 'newIsAllocator',
         type: 'bool',
+      },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'setLiquidityAdapterAndData',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'newLiquidityAdapter',
+        type: 'address',
+      },
+      {
+        name: 'newLiquidityData',
+        type: 'bytes',
       },
     ],
     outputs: [],
@@ -273,15 +289,7 @@ const formatAddressOrUnset = (value) => {
   return value;
 };
 
-const MorphoVaultAdminStatus = ({ vaultOptions }) => {
-  const [selectedVault, setSelectedVault] = useState(vaultOptions[0]?.value ?? '');
-
-  useEffect(() => {
-    if (!selectedVault && vaultOptions[0]?.value) {
-      setSelectedVault(vaultOptions[0].value);
-    }
-  }, [selectedVault, vaultOptions]);
-
+const MorphoVaultAdminStatus = ({ vaultOptions, selectedVault, onVaultChange }) => {
   const isVaultReady = isAddress(selectedVault);
 
   const statusContracts = useMemo(() => {
@@ -321,7 +329,7 @@ const MorphoVaultAdminStatus = ({ vaultOptions }) => {
           <select
             className="terminal-input terminal-select"
             value={selectedVault}
-            onChange={(e) => setSelectedVault(e.target.value)}
+            onChange={(e) => onVaultChange(e.target.value)}
           >
             {vaultOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -633,6 +641,7 @@ const ActionCard = ({
   contractAddress,
   disabledReason,
   deriveAddressField,
+  buildArgs,
 }) => {
   const contractAbi = abi || CONTRACT_LIBRARY[contractName]?.abi;
   const [formValues, setFormValues] = useState(() =>
@@ -672,7 +681,9 @@ const ActionCard = ({
     }
 
     const argFields = fields.filter((field) => !field.omitFromArgs);
-    const args = argFields.map((field) => parseValue(formValues[field.name], field.type === 'select' ? field.valueType ?? 'string' : field.type));
+    const args = buildArgs
+      ? buildArgs(formValues)
+      : argFields.map((field) => parseValue(formValues[field.name], field.type === 'select' ? field.valueType ?? 'string' : field.type));
 
     writeContract({
       address: resolvedAddress,
@@ -708,7 +719,7 @@ const ActionCard = ({
       <form className="function-body" onSubmit={handleSubmit}>
         {fields.length > 0 && (
           <div className="params-grid">
-            {fields.map((field) => (
+            {fields.filter((field) => !field.hidden).map((field) => (
               <div className="param-group" key={field.name}>
                 <label className="terminal-label">
                   {field.label} <span className="type-hint">({field.displayType || field.type})</span>
@@ -755,7 +766,7 @@ const ActionCard = ({
 };
 
 const ActionRenderer = ({ action, addresses, strategyOptions }) => {
-  const contractAddress = action.contractName === 'MYTStrategy' ? undefined : addresses[action.contractName];
+  const contractAddress = action.contractAddress ?? (action.contractName === 'MYTStrategy' ? undefined : addresses[action.contractName]);
   const missingStrategyOptions = action.deriveAddressField === 'strategyAddress' && strategyOptions.length === 0;
 
   return (
@@ -768,6 +779,7 @@ const ActionRenderer = ({ action, addresses, strategyOptions }) => {
       abi={action.abi}
       contractAddress={contractAddress}
       deriveAddressField={action.deriveAddressField}
+      buildArgs={action.buildArgs}
       disabledReason={
         missingStrategyOptions
           ? 'No strategy deployments configured in this dashboard.'
@@ -842,6 +854,13 @@ const CuratooorPanel = ({ addresses, onBack }) => {
     ],
     [addresses],
   );
+  const [selectedMorphoVault, setSelectedMorphoVault] = useState(morphoVaultOptions[0]?.value ?? '');
+
+  useEffect(() => {
+    if (!selectedMorphoVault && morphoVaultOptions[0]?.value) {
+      setSelectedMorphoVault(morphoVaultOptions[0].value);
+    }
+  }, [morphoVaultOptions, selectedMorphoVault]);
 
   const sections = useMemo(() => {
     const mytVaultAddress = DEPLOYMENTS.mytVaultUSDC.address;
@@ -1242,11 +1261,9 @@ const CuratooorPanel = ({ addresses, onBack }) => {
             fields: [
               {
                 name: 'myt',
-                label: 'Morpho Vault',
-                type: 'select',
-                valueType: 'address',
-                options: morphoVaultOptions,
-                defaultValue: morphoVaultOptions[0]?.value ?? '',
+                type: 'address',
+                defaultValue: selectedMorphoVault,
+                hidden: true,
               },
               {
                 name: 'allocator',
@@ -1268,17 +1285,8 @@ const CuratooorPanel = ({ addresses, onBack }) => {
             contractName: 'MorphoV2Vault',
             abi: MORPHO_VAULT_ADMIN_ABI,
             functionName: 'setCurator',
-            deriveAddressField: 'vaultAddress',
+            contractAddress: selectedMorphoVault,
             fields: [
-              {
-                name: 'vaultAddress',
-                label: 'Morpho Vault',
-                type: 'select',
-                valueType: 'address',
-                options: morphoVaultOptions,
-                defaultValue: morphoVaultOptions[0]?.value ?? '',
-                omitFromArgs: true,
-              },
               {
                 name: 'newCurator',
                 label: 'New Curator',
@@ -1293,17 +1301,8 @@ const CuratooorPanel = ({ addresses, onBack }) => {
             contractName: 'MorphoV2Vault',
             abi: MORPHO_VAULT_ADMIN_ABI,
             functionName: 'setIsAllocator',
-            deriveAddressField: 'vaultAddress',
+            contractAddress: selectedMorphoVault,
             fields: [
-              {
-                name: 'vaultAddress',
-                label: 'Morpho Vault',
-                type: 'select',
-                valueType: 'address',
-                options: morphoVaultOptions,
-                defaultValue: morphoVaultOptions[0]?.value ?? '',
-                omitFromArgs: true,
-              },
               {
                 name: 'account',
                 label: 'Allocator Account',
@@ -1318,10 +1317,43 @@ const CuratooorPanel = ({ addresses, onBack }) => {
               },
             ],
           },
+          {
+            title: 'Set Liquidity Adapter And Data',
+            description: 'Allocator operator/admin path. Calls `setLiquidityAdapterAndData(address,bytes)` on the selected Morpho vault via `AlchemistAllocator.proxy(...)`.',
+            contractName: 'AlchemistAllocator',
+            functionName: 'proxy',
+            contractAddress: DEPLOYMENTS.alchemistAllocator.address,
+            buildArgs: (formValues) => [
+              selectedMorphoVault,
+              encodeFunctionData({
+                abi: MORPHO_VAULT_ADMIN_ABI,
+                functionName: 'setLiquidityAdapterAndData',
+                args: [
+                  parseValue(formValues.newLiquidityAdapter, 'address'),
+                  parseValue(formValues.newLiquidityData, 'bytes'),
+                ],
+              }),
+            ],
+            fields: [
+              {
+                name: 'newLiquidityAdapter',
+                label: 'Liquidity Adapter',
+                type: 'address',
+                placeholder: '0x...',
+              },
+              {
+                name: 'newLiquidityData',
+                label: 'Liquidity Data',
+                type: 'bytes',
+                defaultValue: '0x',
+                hidden: true,
+              },
+            ],
+          },
         ],
       },
     ];
-  }, [morphoVaultOptions, strategyOptions]);
+  }, [morphoVaultOptions, selectedMorphoVault, strategyOptions]);
 
   if (!isConnected) {
     return (
@@ -1384,7 +1416,11 @@ const CuratooorPanel = ({ addresses, onBack }) => {
           </div>
           {section.statusPanel === 'morphoVaultAdmin' && (
             <div style={{ marginBottom: '20px' }}>
-              <MorphoVaultAdminStatus vaultOptions={morphoVaultOptions} />
+              <MorphoVaultAdminStatus
+                vaultOptions={morphoVaultOptions}
+                selectedVault={selectedMorphoVault}
+                onVaultChange={setSelectedMorphoVault}
+              />
             </div>
           )}
           <div className="curatooor-grid">
