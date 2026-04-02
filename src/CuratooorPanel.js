@@ -820,6 +820,8 @@ const StrategyMaintenance = ({ strategyAddress, strategyLabel }) => {
 
 const CuratooorPanel = ({ addresses, onBack }) => {
   const { isConnected } = useAccount();
+  const [activeView, setActiveView] = useState('status');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const strategyOptions = useMemo(
     () =>
@@ -861,6 +863,8 @@ const CuratooorPanel = ({ addresses, onBack }) => {
       setSelectedMorphoVault(morphoVaultOptions[0].value);
     }
   }, [morphoVaultOptions, selectedMorphoVault]);
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
 
   const sections = useMemo(() => {
     const mytVaultAddress = DEPLOYMENTS.mytVaultUSDC.address;
@@ -1355,6 +1359,36 @@ const CuratooorPanel = ({ addresses, onBack }) => {
     ];
   }, [morphoVaultOptions, selectedMorphoVault, strategyOptions]);
 
+  const filteredSections = useMemo(() => {
+    if (!normalizedSearch) return sections;
+
+    const actionMatchesSearch = (action) => {
+      if (action.type === 'sequence') {
+        return (
+          action.title.toLowerCase().includes(normalizedSearch) ||
+          action.description.toLowerCase().includes(normalizedSearch) ||
+          action.steps.some((step) =>
+            step.title.toLowerCase().includes(normalizedSearch) ||
+            step.description.toLowerCase().includes(normalizedSearch) ||
+            step.functionName.toLowerCase().includes(normalizedSearch)
+          )
+        );
+      }
+
+      return (
+        action.title.toLowerCase().includes(normalizedSearch) ||
+        action.description.toLowerCase().includes(normalizedSearch) ||
+        action.functionName.toLowerCase().includes(normalizedSearch)
+      );
+    };
+
+    return sections.filter((section) =>
+      section.title.toLowerCase().includes(normalizedSearch) ||
+      section.description.toLowerCase().includes(normalizedSearch) ||
+      section.actions.some(actionMatchesSearch)
+    );
+  }, [normalizedSearch, sections]);
+
   if (!isConnected) {
     return (
       <div className="contract-section">
@@ -1383,73 +1417,113 @@ const CuratooorPanel = ({ addresses, onBack }) => {
         <button onClick={onBack} className="back-button">← Back to Table of Contents</button>
       </div>
 
-      <CuratooorSnapshot addresses={addresses} strategyOptions={strategyOptions} />
-
-      <div className="terminal-box">
-        <div className="terminal-line">
-          <span className="contract-label">[Deployment Reference]</span> Live addresses wired for Optimism staging.
-        </div>
-        {deploymentCards.map((deployment) => (
-          <StrategyMaintenance
-            key={deployment.label}
-            strategyAddress={deployment.address}
-            strategyLabel={deployment.label}
-          />
-        ))}
-        {strategyOptions.length > 0 && (
-          <>
-            <div className="terminal-line" style={{ marginTop: '15px' }}>
-              <span className="contract-label">[Strategy Targets]</span>
-            </div>
-            {strategyOptions.map((option) => (
-              <StrategyMaintenance key={option.key} strategyAddress={option.value} strategyLabel={option.label} />
-            ))}
-          </>
-        )}
+      <div className="curatooor-view-toggle">
+        <button
+          type="button"
+          className={`terminal-button ${activeView === 'status' ? 'curatooor-view-button-active' : ''}`}
+          onClick={() => setActiveView('status')}
+        >
+          [STATUS]
+        </button>
+        <button
+          type="button"
+          className={`terminal-button ${activeView === 'actions' ? 'curatooor-view-button-active' : ''}`}
+          onClick={() => setActiveView('actions')}
+        >
+          [ACTIONS]
+        </button>
       </div>
 
-      {sections.map((section) => (
-        <div key={section.title} className="curatooor-section">
-          <div className="curatooor-section-header">
-            <h3>{section.title}</h3>
-            <p>{section.description}</p>
-          </div>
-          {section.statusPanel === 'morphoVaultAdmin' && (
-            <div style={{ marginBottom: '20px' }}>
-              <MorphoVaultAdminStatus
-                vaultOptions={morphoVaultOptions}
-                selectedVault={selectedMorphoVault}
-                onVaultChange={setSelectedMorphoVault}
+      {activeView === 'status' ? (
+        <>
+          <CuratooorSnapshot addresses={addresses} strategyOptions={strategyOptions} />
+
+          <div className="terminal-box">
+            <div className="terminal-line">
+              <span className="contract-label">[Deployment Reference]</span> Live addresses wired for Optimism staging.
+            </div>
+            {deploymentCards.map((deployment) => (
+              <StrategyMaintenance
+                key={deployment.label}
+                strategyAddress={deployment.address}
+                strategyLabel={deployment.label}
               />
+            ))}
+            {strategyOptions.length > 0 && (
+              <>
+                <div className="terminal-line" style={{ marginTop: '15px' }}>
+                  <span className="contract-label">[Strategy Targets]</span>
+                </div>
+                {strategyOptions.map((option) => (
+                  <StrategyMaintenance key={option.key} strategyAddress={option.value} strategyLabel={option.label} />
+                ))}
+              </>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="section-filter-bar">
+            <input
+              type="text"
+              className="terminal-input section-filter-input"
+              placeholder="Filter curator sections and actions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {filteredSections.map((section) => (
+            <div key={section.title} className="curatooor-section">
+              <div className="curatooor-section-header">
+                <h3>{section.title}</h3>
+                <p>{section.description}</p>
+              </div>
+              {section.statusPanel === 'morphoVaultAdmin' && (
+                <div style={{ marginBottom: '20px' }}>
+                  <MorphoVaultAdminStatus
+                    vaultOptions={morphoVaultOptions}
+                    selectedVault={selectedMorphoVault}
+                    onVaultChange={setSelectedMorphoVault}
+                  />
+                </div>
+              )}
+              <div className="curatooor-grid">
+                {section.actions.map((action) => {
+                  if (action.type === 'sequence') {
+                    return (
+                      <SequentialActionGroup
+                        key={action.title}
+                        title={action.title}
+                        description={action.description}
+                        steps={action.steps}
+                        addresses={addresses}
+                        strategyOptions={strategyOptions}
+                      />
+                    );
+                  }
+
+                  return (
+                    <ActionRenderer
+                      key={`${action.title}-${action.functionName}`}
+                      action={action}
+                      addresses={addresses}
+                      strategyOptions={strategyOptions}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {filteredSections.length === 0 && (
+            <div className="terminal-box">
+              <div className="terminal-line">
+                <span className="terminal-text">No curator sections match that filter.</span>
+              </div>
             </div>
           )}
-          <div className="curatooor-grid">
-            {section.actions.map((action) => {
-              if (action.type === 'sequence') {
-                return (
-                  <SequentialActionGroup
-                    key={action.title}
-                    title={action.title}
-                    description={action.description}
-                    steps={action.steps}
-                    addresses={addresses}
-                    strategyOptions={strategyOptions}
-                  />
-                );
-              }
-
-              return (
-                <ActionRenderer
-                  key={`${action.title}-${action.functionName}`}
-                  action={action}
-                  addresses={addresses}
-                  strategyOptions={strategyOptions}
-                />
-              );
-            })}
-          </div>
-        </div>
-      ))}
+        </>
+      )}
     </div>
   );
 };

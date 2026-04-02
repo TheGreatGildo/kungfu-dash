@@ -527,6 +527,8 @@ function ContractSection({ contractName, contract, contractAddress, onAddressCha
 
 // Admin Panel component
 function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const normalizedSearch = searchTerm.trim().toLowerCase();
   // Collect all admin functions from all contracts
   const adminFunctions = [];
 
@@ -563,6 +565,19 @@ function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
     groupedByContract[item.contractName].functions.push(item.func);
   });
 
+  const filteredContracts = Object.entries(groupedByContract).filter(([, data]) => {
+    if (!normalizedSearch) return true;
+
+    const matchesContract = data.contractTitle.toLowerCase().includes(normalizedSearch);
+    const matchesFunction = data.functions.some((func) => {
+      const name = func.name?.toLowerCase() || '';
+      const natspec = func.natspec?.toLowerCase() || '';
+      return name.includes(normalizedSearch) || natspec.includes(normalizedSearch);
+    });
+
+    return matchesContract || matchesFunction;
+  });
+
   return (
     <div className="admin-panel-section">
       <div className="admin-panel-header">
@@ -574,13 +589,22 @@ function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
         </div>
         <div className="admin-panel-stats">
           <span className="terminal-text">
-            {Object.keys(groupedByContract).length} contracts with admin functions • {adminFunctions.length} total admin functions
+            {filteredContracts.length} of {Object.keys(groupedByContract).length} contracts shown • {adminFunctions.length} total admin functions
           </span>
+        </div>
+        <div className="section-filter-bar">
+          <input
+            type="text"
+            className="terminal-input section-filter-input"
+            placeholder="Filter admin panel by contract or function..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
       <div className="admin-functions-list">
-        {Object.entries(groupedByContract).map(([contractName, data]) => (
+        {filteredContracts.map(([contractName, data]) => (
           <div key={contractName} className="admin-contract-group">
             <div className="admin-contract-header">
               <div className="admin-contract-title">
@@ -615,6 +639,13 @@ function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
             </div>
           </div>
         )}
+        {adminFunctions.length > 0 && filteredContracts.length === 0 && (
+          <div className="terminal-box">
+            <div className="terminal-line">
+              <span className="terminal-text">No admin panel matches for that filter.</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -622,6 +653,18 @@ function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
 
 // Table of Contents component
 function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelSelect, onCuratorSelect }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredContracts = CONTRACT_NAMES.filter((contractName) => {
+    if (!normalizedSearch) return true;
+
+    const contract = contracts[contractName];
+    if (!contract) return false;
+
+    const title = (contract.title || contractName).toLowerCase();
+    return title.includes(normalizedSearch) || contractName.toLowerCase().includes(normalizedSearch);
+  });
+
   return (
     <div className="toc-section">
       <div className="toc-header">
@@ -635,9 +678,18 @@ function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelS
           </button>
         </div>
       </div>
+      <div className="section-filter-bar">
+        <input
+          type="text"
+          className="terminal-input section-filter-input"
+          placeholder="Filter table of contracts..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
       <div className="toc-grid">
-        {CONTRACT_NAMES.map((contractName) => {
-          const contract = CONTRACT_LIBRARY[contractName];
+        {filteredContracts.map((contractName) => {
+          const contract = contracts[contractName];
           if (!contract) return null;
 
           const hasAddress = addresses[contractName] && addresses[contractName] !== '0xPLACEHOLDER';
@@ -663,6 +715,13 @@ function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelS
           );
         })}
       </div>
+      {filteredContracts.length === 0 && (
+        <div className="terminal-box">
+          <div className="terminal-line">
+            <span className="terminal-text">No contracts match that filter.</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
