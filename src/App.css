@@ -444,6 +444,14 @@ code {
   font-family: 'Courier New', 'Courier', monospace;
 }
 
+.section-filter-bar {
+  margin-bottom: 20px;
+}
+
+.section-filter-input {
+  width: 100%;
+}
+
 .toc-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -770,6 +778,34 @@ code {
 
 .curatooor-header {
   align-items: flex-start;
+}
+
+.curatooor-view-toggle {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.curatooor-view-toggle .terminal-button {
+  min-width: 140px;
+  opacity: 0.7;
+}
+
+.curatooor-view-button-active {
+  background: #00ff00;
+  color: #000000;
+  border-color: #66ff66;
+  text-shadow: none;
+  box-shadow: 0 0 18px rgba(0, 255, 0, 0.8);
+  opacity: 1 !important;
+}
+
+.curatooor-view-button-active:hover:not(:disabled) {
+  background: #33ff33;
+  color: #000000;
+  text-shadow: none;
+  box-shadow: 0 0 22px rgba(0, 255, 0, 0.9);
 }
 
 .manual-address-wrapper {

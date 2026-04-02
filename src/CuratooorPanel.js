@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useReadContracts } from 'wagmi';
 import { CONTRACT_LIBRARY } from './contracts';
-import { formatUnits } from 'viem';
+import { encodeFunctionData, formatUnits } from 'viem';
 
 const DEPLOYMENTS = {
   mytVaultUSDC: {
@@ -58,6 +58,120 @@ const STRATEGY_PRESETS = [
     key: 'MoonwellWETHStrategy',
     label: 'Moonwell OP WETH Strategy (alETH)',
     fallback: '0x0525aF9A464828c4F52C5B051DF7eeFf8a3B43C7',
+  },
+];
+
+const MORPHO_VAULT_ADMIN_ABI = [
+  {
+    type: 'function',
+    name: 'setCurator',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'newCurator',
+        type: 'address',
+      },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'setIsAllocator',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'account',
+        type: 'address',
+      },
+      {
+        name: 'newIsAllocator',
+        type: 'bool',
+      },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'setLiquidityAdapterAndData',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'newLiquidityAdapter',
+        type: 'address',
+      },
+      {
+        name: 'newLiquidityData',
+        type: 'bytes',
+      },
+    ],
+    outputs: [],
+  },
+];
+
+const ALCHEMIST_CURATOR_ADMIN_ABI = [
+  {
+    type: 'function',
+    name: 'submitSetAllocator',
+    stateMutability: 'nonpayable',
+    inputs: [
+      {
+        name: 'myt',
+        type: 'address',
+      },
+      {
+        name: 'allocator',
+        type: 'address',
+      },
+      {
+        name: 'v',
+        type: 'bool',
+      },
+    ],
+    outputs: [],
+  },
+];
+
+const MORPHO_VAULT_STATUS_ABI = [
+  {
+    type: 'function',
+    name: 'owner',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+      },
+    ],
+  },
+  {
+    type: 'function',
+    name: 'curator',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'address',
+      },
+    ],
+  },
+  {
+    type: 'function',
+    name: 'isAllocator',
+    stateMutability: 'view',
+    inputs: [
+      {
+        name: 'account',
+        type: 'address',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'bool',
+      },
+    ],
   },
 ];
 
@@ -167,6 +281,74 @@ const FieldInput = ({ field, value, onChange }) => {
   );
 };
 
+const formatAddressOrUnset = (value) => {
+  if (!value || !isAddress(value) || value === '0x0000000000000000000000000000000000000000') {
+    return 'Unset';
+  }
+
+  return value;
+};
+
+const MorphoVaultAdminStatus = ({ vaultOptions, selectedVault, onVaultChange }) => {
+  const isVaultReady = isAddress(selectedVault);
+
+  const statusContracts = useMemo(() => {
+    if (!isVaultReady) return [];
+
+    return [
+      {
+        address: selectedVault,
+        abi: MORPHO_VAULT_STATUS_ABI,
+        functionName: 'owner',
+      },
+      {
+        address: selectedVault,
+        abi: MORPHO_VAULT_STATUS_ABI,
+        functionName: 'curator',
+      },
+    ];
+  }, [isVaultReady, selectedVault]);
+
+  const { data: statusResults } = useReadContracts({
+    contracts: statusContracts,
+    query: { enabled: statusContracts.length > 0 },
+  });
+
+  const ownerAddress = statusResults?.[0]?.result;
+  const curatorAddress = statusResults?.[1]?.result;
+
+  return (
+    <div className="snapshot-card">
+      <div className="snapshot-card-header">
+        <h4>Morpho Vault Status</h4>
+        <span>{selectedVault || 'Select a vault'}</span>
+      </div>
+      <div className="params-grid" style={{ marginBottom: '15px' }}>
+        <div className="param-group">
+          <label className="terminal-label">Vault</label>
+          <select
+            className="terminal-input terminal-select"
+            value={selectedVault}
+            onChange={(e) => onVaultChange(e.target.value)}
+          >
+            {vaultOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="terminal-line">
+        <span className="contract-label">Owner:</span> {formatAddressOrUnset(ownerAddress)}
+      </div>
+      <div className="terminal-line">
+        <span className="contract-label">Curator:</span> {formatAddressOrUnset(curatorAddress)}
+      </div>
+    </div>
+  );
+};
+
 const CuratooorSnapshot = ({ addresses, strategyOptions }) => {
   const [ytInput, setYtInput] = useState('0');
   const parsedYtId = useMemo(() => {
@@ -180,42 +362,46 @@ const CuratooorSnapshot = ({ addresses, strategyOptions }) => {
   const alchemistAddress = addresses?.AlchemistV3_alUSD;
   const transmuterAddress = addresses?.Transmuter_alUSD;
   const gaugeAddress = addresses?.PerpetualGauge;
+  const alchemistAbi = CONTRACT_LIBRARY.AlchemistV3_alUSD?.abi;
+  const transmuterAbi = CONTRACT_LIBRARY.Transmuter_alUSD?.abi;
+  const gaugeAbi = CONTRACT_LIBRARY.PerpetualGauge?.abi;
+  const strategyAbi = CONTRACT_LIBRARY.MYTStrategy_USDC?.abi || CONTRACT_LIBRARY.MYTStrategy_WETH?.abi;
 
-  const isAlchemistReady = isAddress(alchemistAddress);
-  const isTransmuterReady = isAddress(transmuterAddress);
-  const isGaugeReady = isAddress(gaugeAddress);
+  const isAlchemistReady = isAddress(alchemistAddress) && Boolean(alchemistAbi);
+  const isTransmuterReady = isAddress(transmuterAddress) && Boolean(transmuterAbi);
+  const isGaugeReady = isAddress(gaugeAddress) && Boolean(gaugeAbi);
 
   const { data: totalValue } = useReadContract({
     address: isAlchemistReady ? alchemistAddress : undefined,
-    abi: CONTRACT_LIBRARY.AlchemistV3.abi,
+    abi: alchemistAbi,
     functionName: 'totalValue',
     query: { enabled: isAlchemistReady },
   });
 
   const { data: totalDebt } = useReadContract({
     address: isAlchemistReady ? alchemistAddress : undefined,
-    abi: CONTRACT_LIBRARY.AlchemistV3.abi,
+    abi: alchemistAbi,
     functionName: 'totalDebt',
     query: { enabled: isAlchemistReady },
   });
 
   const { data: transmuterTotalLocked } = useReadContract({
     address: isTransmuterReady ? transmuterAddress : undefined,
-    abi: CONTRACT_LIBRARY.Transmuter.abi,
+    abi: transmuterAbi,
     functionName: 'totalLocked',
     query: { enabled: isTransmuterReady },
   });
 
   const { data: transmuterDepositCap } = useReadContract({
     address: isTransmuterReady ? transmuterAddress : undefined,
-    abi: CONTRACT_LIBRARY.Transmuter.abi,
+    abi: transmuterAbi,
     functionName: 'depositCap',
     query: { enabled: isTransmuterReady },
   });
 
   const allocationsQuery = useReadContract({
     address: isGaugeReady ? gaugeAddress : undefined,
-    abi: CONTRACT_LIBRARY.PerpetualGauge.abi,
+    abi: gaugeAbi,
     functionName: 'getCurrentAllocations',
     args: [parsedYtId],
     query: { enabled: isGaugeReady },
@@ -238,24 +424,24 @@ const CuratooorSnapshot = ({ addresses, strategyOptions }) => {
       if (address) {
         contracts.push({
           address,
-          abi: CONTRACT_LIBRARY.MYTStrategy.abi,
+          abi: strategyAbi,
           functionName: 'realAssets',
         });
         contracts.push({
           address,
-          abi: CONTRACT_LIBRARY.MYTStrategy.abi,
+          abi: strategyAbi,
           functionName: 'estApy',
         });
         contracts.push({
           address,
-          abi: CONTRACT_LIBRARY.MYTStrategy.abi,
+          abi: strategyAbi,
           functionName: 'killSwitch',
         });
       }
     });
 
     return { contracts, meta };
-  }, [strategyOptions]);
+  }, [strategyAbi, strategyOptions]);
 
   const strategyBatchResults = useReadContracts({
     contracts: strategyContractBatch.contracts,
@@ -451,11 +637,13 @@ const ActionCard = ({
   contractName,
   functionName,
   fields,
+  abi,
   contractAddress,
   disabledReason,
   deriveAddressField,
+  buildArgs,
 }) => {
-  const contract = CONTRACT_LIBRARY[contractName];
+  const contractAbi = abi || CONTRACT_LIBRARY[contractName]?.abi;
   const [formValues, setFormValues] = useState(() =>
     Object.fromEntries(fields.map((field) => [field.name, field.defaultValue ?? ''])),
   );
@@ -475,7 +663,7 @@ const ActionCard = ({
     ? manualAddress || formValues[deriveAddressField]
     : manualAddress || contractAddress;
 
-  const isReady = contract && resolvedAddress && resolvedAddress !== '0xPLACEHOLDER';
+  const isReady = contractAbi && resolvedAddress && resolvedAddress !== '0xPLACEHOLDER';
   const isDisabled = !isReady || !!disabledReason;
   const mergedReason = !isReady
     ? 'Contract address missing. Populate the address or select a strategy before executing.'
@@ -488,16 +676,18 @@ const ActionCard = ({
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!isReady || !contract) {
+    if (!isReady || !contractAbi) {
       return;
     }
 
     const argFields = fields.filter((field) => !field.omitFromArgs);
-    const args = argFields.map((field) => parseValue(formValues[field.name], field.type === 'select' ? field.valueType ?? 'string' : field.type));
+    const args = buildArgs
+      ? buildArgs(formValues)
+      : argFields.map((field) => parseValue(formValues[field.name], field.type === 'select' ? field.valueType ?? 'string' : field.type));
 
     writeContract({
       address: resolvedAddress,
-      abi: contract.abi,
+      abi: contractAbi,
       functionName,
       args: args.length > 0 ? args : undefined,
     });
@@ -529,7 +719,7 @@ const ActionCard = ({
       <form className="function-body" onSubmit={handleSubmit}>
         {fields.length > 0 && (
           <div className="params-grid">
-            {fields.map((field) => (
+            {fields.filter((field) => !field.hidden).map((field) => (
               <div className="param-group" key={field.name}>
                 <label className="terminal-label">
                   {field.label} <span className="type-hint">({field.displayType || field.type})</span>
@@ -576,7 +766,7 @@ const ActionCard = ({
 };
 
 const ActionRenderer = ({ action, addresses, strategyOptions }) => {
-  const contractAddress = action.contractName === 'MYTStrategy' ? undefined : addresses[action.contractName];
+  const contractAddress = action.contractAddress ?? (action.contractName === 'MYTStrategy' ? undefined : addresses[action.contractName]);
   const missingStrategyOptions = action.deriveAddressField === 'strategyAddress' && strategyOptions.length === 0;
 
   return (
@@ -586,8 +776,10 @@ const ActionRenderer = ({ action, addresses, strategyOptions }) => {
       contractName={action.contractName}
       functionName={action.functionName}
       fields={action.fields}
+      abi={action.abi}
       contractAddress={contractAddress}
       deriveAddressField={action.deriveAddressField}
+      buildArgs={action.buildArgs}
       disabledReason={
         missingStrategyOptions
           ? 'No strategy deployments configured in this dashboard.'
@@ -628,6 +820,8 @@ const StrategyMaintenance = ({ strategyAddress, strategyLabel }) => {
 
 const CuratooorPanel = ({ addresses, onBack }) => {
   const { isConnected } = useAccount();
+  const [activeView, setActiveView] = useState('status');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const strategyOptions = useMemo(
     () =>
@@ -645,6 +839,32 @@ const CuratooorPanel = ({ addresses, onBack }) => {
   );
 
   const deploymentCards = Object.values(DEPLOYMENTS);
+  const morphoVaultOptions = useMemo(
+    () => [
+      {
+        label: DEPLOYMENTS.mytVaultUSDC.label,
+        value: addresses?.MYTStrategy_USDC && addresses.MYTStrategy_USDC !== '0xPLACEHOLDER'
+          ? addresses.MYTStrategy_USDC
+          : DEPLOYMENTS.mytVaultUSDC.address,
+      },
+      {
+        label: DEPLOYMENTS.mytVaultWETH.label,
+        value: addresses?.MYTStrategy_WETH && addresses.MYTStrategy_WETH !== '0xPLACEHOLDER'
+          ? addresses.MYTStrategy_WETH
+          : DEPLOYMENTS.mytVaultWETH.address,
+      },
+    ],
+    [addresses],
+  );
+  const [selectedMorphoVault, setSelectedMorphoVault] = useState(morphoVaultOptions[0]?.value ?? '');
+
+  useEffect(() => {
+    if (!selectedMorphoVault && morphoVaultOptions[0]?.value) {
+      setSelectedMorphoVault(morphoVaultOptions[0].value);
+    }
+  }, [morphoVaultOptions, selectedMorphoVault]);
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
 
   const sections = useMemo(() => {
     const mytVaultAddress = DEPLOYMENTS.mytVaultUSDC.address;
@@ -1031,8 +1251,143 @@ const CuratooorPanel = ({ addresses, onBack }) => {
           },
         ],
       },
+      {
+        title: 'Morpho Vault Admin',
+        description: 'Owner and timelock level controls on the Morpho V2 vault contracts.',
+        statusPanel: 'morphoVaultAdmin',
+        actions: [
+          {
+            title: 'Submit Vault Allocator Change',
+            description: 'Admin action. Queues `setIsAllocator(address,bool)` on the selected Morpho vault via `submitSetAllocator(address myt,address allocator,bool v)`.',
+            contractName: 'AlchemistCurator',
+            abi: ALCHEMIST_CURATOR_ADMIN_ABI,
+            functionName: 'submitSetAllocator',
+            fields: [
+              {
+                name: 'myt',
+                type: 'address',
+                defaultValue: selectedMorphoVault,
+                hidden: true,
+              },
+              {
+                name: 'allocator',
+                label: 'Allocator Account',
+                type: 'address',
+                placeholder: '0x...',
+              },
+              {
+                name: 'v',
+                label: 'Allocator Enabled',
+                type: 'bool',
+                placeholder: 'false',
+              },
+            ],
+          },
+          {
+            title: 'Set Vault Curator',
+            description: 'Owner only. Calls `setCurator(address)` on the selected Morpho vault.',
+            contractName: 'MorphoV2Vault',
+            abi: MORPHO_VAULT_ADMIN_ABI,
+            functionName: 'setCurator',
+            contractAddress: selectedMorphoVault,
+            fields: [
+              {
+                name: 'newCurator',
+                label: 'New Curator',
+                type: 'address',
+                placeholder: '0x...',
+              },
+            ],
+          },
+          {
+            title: 'Set Vault Allocator',
+            description: '🔒 Timelocked. Calls `setIsAllocator(address,bool)` on the selected Morpho vault.',
+            contractName: 'MorphoV2Vault',
+            abi: MORPHO_VAULT_ADMIN_ABI,
+            functionName: 'setIsAllocator',
+            contractAddress: selectedMorphoVault,
+            fields: [
+              {
+                name: 'account',
+                label: 'Allocator Account',
+                type: 'address',
+                placeholder: '0x...',
+              },
+              {
+                name: 'newIsAllocator',
+                label: 'Allocator Enabled',
+                type: 'bool',
+                placeholder: 'false',
+              },
+            ],
+          },
+          {
+            title: 'Set Liquidity Adapter And Data',
+            description: 'Allocator operator/admin path. Calls `setLiquidityAdapterAndData(address,bytes)` on the selected Morpho vault via `AlchemistAllocator.proxy(...)`.',
+            contractName: 'AlchemistAllocator',
+            functionName: 'proxy',
+            contractAddress: DEPLOYMENTS.alchemistAllocator.address,
+            buildArgs: (formValues) => [
+              selectedMorphoVault,
+              encodeFunctionData({
+                abi: MORPHO_VAULT_ADMIN_ABI,
+                functionName: 'setLiquidityAdapterAndData',
+                args: [
+                  parseValue(formValues.newLiquidityAdapter, 'address'),
+                  parseValue(formValues.newLiquidityData, 'bytes'),
+                ],
+              }),
+            ],
+            fields: [
+              {
+                name: 'newLiquidityAdapter',
+                label: 'Liquidity Adapter',
+                type: 'address',
+                placeholder: '0x...',
+              },
+              {
+                name: 'newLiquidityData',
+                label: 'Liquidity Data',
+                type: 'bytes',
+                defaultValue: '0x',
+                hidden: true,
+              },
+            ],
+          },
+        ],
+      },
     ];
-  }, [strategyOptions]);
+  }, [morphoVaultOptions, selectedMorphoVault, strategyOptions]);
+
+  const filteredSections = useMemo(() => {
+    if (!normalizedSearch) return sections;
+
+    const actionMatchesSearch = (action) => {
+      if (action.type === 'sequence') {
+        return (
+          action.title.toLowerCase().includes(normalizedSearch) ||
+          action.description.toLowerCase().includes(normalizedSearch) ||
+          action.steps.some((step) =>
+            step.title.toLowerCase().includes(normalizedSearch) ||
+            step.description.toLowerCase().includes(normalizedSearch) ||
+            step.functionName.toLowerCase().includes(normalizedSearch)
+          )
+        );
+      }
+
+      return (
+        action.title.toLowerCase().includes(normalizedSearch) ||
+        action.description.toLowerCase().includes(normalizedSearch) ||
+        action.functionName.toLowerCase().includes(normalizedSearch)
+      );
+    };
+
+    return sections.filter((section) =>
+      section.title.toLowerCase().includes(normalizedSearch) ||
+      section.description.toLowerCase().includes(normalizedSearch) ||
+      section.actions.some(actionMatchesSearch)
+    );
+  }, [normalizedSearch, sections]);
 
   if (!isConnected) {
     return (
@@ -1062,64 +1417,113 @@ const CuratooorPanel = ({ addresses, onBack }) => {
         <button onClick={onBack} className="back-button">← Back to Table of Contents</button>
       </div>
 
-      <CuratooorSnapshot addresses={addresses} strategyOptions={strategyOptions} />
-
-      <div className="terminal-box">
-        <div className="terminal-line">
-          <span className="contract-label">[Deployment Reference]</span> Live addresses wired for Optimism staging.
-        </div>
-        {deploymentCards.map((deployment) => (
-          <StrategyMaintenance
-            key={deployment.label}
-            strategyAddress={deployment.address}
-            strategyLabel={deployment.label}
-          />
-        ))}
-        {strategyOptions.length > 0 && (
-          <>
-            <div className="terminal-line" style={{ marginTop: '15px' }}>
-              <span className="contract-label">[Strategy Targets]</span>
-            </div>
-            {strategyOptions.map((option) => (
-              <StrategyMaintenance key={option.key} strategyAddress={option.value} strategyLabel={option.label} />
-            ))}
-          </>
-        )}
+      <div className="curatooor-view-toggle">
+        <button
+          type="button"
+          className={`terminal-button ${activeView === 'status' ? 'curatooor-view-button-active' : ''}`}
+          onClick={() => setActiveView('status')}
+        >
+          [STATUS]
+        </button>
+        <button
+          type="button"
+          className={`terminal-button ${activeView === 'actions' ? 'curatooor-view-button-active' : ''}`}
+          onClick={() => setActiveView('actions')}
+        >
+          [ACTIONS]
+        </button>
       </div>
 
-      {sections.map((section) => (
-        <div key={section.title} className="curatooor-section">
-          <div className="curatooor-section-header">
-            <h3>{section.title}</h3>
-            <p>{section.description}</p>
-          </div>
-          <div className="curatooor-grid">
-            {section.actions.map((action) => {
-              if (action.type === 'sequence') {
-                return (
-                  <SequentialActionGroup
-                    key={action.title}
-                    title={action.title}
-                    description={action.description}
-                    steps={action.steps}
-                    addresses={addresses}
-                    strategyOptions={strategyOptions}
-                  />
-                );
-              }
+      {activeView === 'status' ? (
+        <>
+          <CuratooorSnapshot addresses={addresses} strategyOptions={strategyOptions} />
 
-              return (
-                <ActionRenderer
-                  key={`${action.title}-${action.functionName}`}
-                  action={action}
-                  addresses={addresses}
-                  strategyOptions={strategyOptions}
-                />
-              );
-            })}
+          <div className="terminal-box">
+            <div className="terminal-line">
+              <span className="contract-label">[Deployment Reference]</span> Live addresses wired for Optimism staging.
+            </div>
+            {deploymentCards.map((deployment) => (
+              <StrategyMaintenance
+                key={deployment.label}
+                strategyAddress={deployment.address}
+                strategyLabel={deployment.label}
+              />
+            ))}
+            {strategyOptions.length > 0 && (
+              <>
+                <div className="terminal-line" style={{ marginTop: '15px' }}>
+                  <span className="contract-label">[Strategy Targets]</span>
+                </div>
+                {strategyOptions.map((option) => (
+                  <StrategyMaintenance key={option.key} strategyAddress={option.value} strategyLabel={option.label} />
+                ))}
+              </>
+            )}
           </div>
-        </div>
-      ))}
+        </>
+      ) : (
+        <>
+          <div className="section-filter-bar">
+            <input
+              type="text"
+              className="terminal-input section-filter-input"
+              placeholder="Filter curator sections and actions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {filteredSections.map((section) => (
+            <div key={section.title} className="curatooor-section">
+              <div className="curatooor-section-header">
+                <h3>{section.title}</h3>
+                <p>{section.description}</p>
+              </div>
+              {section.statusPanel === 'morphoVaultAdmin' && (
+                <div style={{ marginBottom: '20px' }}>
+                  <MorphoVaultAdminStatus
+                    vaultOptions={morphoVaultOptions}
+                    selectedVault={selectedMorphoVault}
+                    onVaultChange={setSelectedMorphoVault}
+                  />
+                </div>
+              )}
+              <div className="curatooor-grid">
+                {section.actions.map((action) => {
+                  if (action.type === 'sequence') {
+                    return (
+                      <SequentialActionGroup
+                        key={action.title}
+                        title={action.title}
+                        description={action.description}
+                        steps={action.steps}
+                        addresses={addresses}
+                        strategyOptions={strategyOptions}
+                      />
+                    );
+                  }
+
+                  return (
+                    <ActionRenderer
+                      key={`${action.title}-${action.functionName}`}
+                      action={action}
+                      addresses={addresses}
+                      strategyOptions={strategyOptions}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {filteredSections.length === 0 && (
+            <div className="terminal-box">
+              <div className="terminal-line">
+                <span className="terminal-text">No curator sections match that filter.</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
