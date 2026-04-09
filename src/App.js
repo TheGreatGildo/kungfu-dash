@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { WagmiProvider, useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, createConfig } from 'wagmi';
+import { ConnectButton, getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { WagmiProvider, useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { optimism } from 'wagmi/chains';
-import { http } from 'wagmi';
-import { injected, metaMask, coinbaseWallet, walletConnect } from 'wagmi/connectors';
 import '@rainbow-me/rainbowkit/styles.css';
 import './App.css';
 import CuratooorPanel from './CuratooorPanel';
@@ -30,6 +27,10 @@ const DEFAULT_ADDRESSES = {
   MYTStrategy_USDC: '0xf9b479281bd85C85FbBaEB1B82A4Ed260c0EbD1b',
   MYTStrategy_WETH: '0x715b82eD525126af05Acf6d3e60A6012393DF8F2',
 };
+
+// Dev flag for browsing the dashboard without connecting a wallet.
+// (for viewing the dashboard without connecting a wallet)
+const BYPASS_WALLET_REQUIRED = false;
 
 // Helper function to identify admin functions (functions with permission modifiers)
 // Based on common patterns: set*, pause*, accept*, transfer*, renounce*, etc.
@@ -484,6 +485,8 @@ function ContractSection({ contractName, contract, contractAddress, onAddressCha
 
 // Admin Panel component
 function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const normalizedSearch = searchTerm.trim().toLowerCase();
   // Collect all admin functions from all contracts
   const adminFunctions = [];
 
@@ -520,6 +523,19 @@ function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
     groupedByContract[item.contractName].functions.push(item.func);
   });
 
+  const filteredContracts = Object.entries(groupedByContract).filter(([, data]) => {
+    if (!normalizedSearch) return true;
+
+    const matchesContract = data.contractTitle.toLowerCase().includes(normalizedSearch);
+    const matchesFunction = data.functions.some((func) => {
+      const name = func.name?.toLowerCase() || '';
+      const natspec = func.natspec?.toLowerCase() || '';
+      return name.includes(normalizedSearch) || natspec.includes(normalizedSearch);
+    });
+
+    return matchesContract || matchesFunction;
+  });
+
   return (
     <div className="admin-panel-section">
       <div className="admin-panel-header">
@@ -531,13 +547,22 @@ function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
         </div>
         <div className="admin-panel-stats">
           <span className="terminal-text">
-            {Object.keys(groupedByContract).length} contracts with admin functions • {adminFunctions.length} total admin functions
+            {filteredContracts.length} of {Object.keys(groupedByContract).length} contracts shown • {adminFunctions.length} total admin functions
           </span>
+        </div>
+        <div className="section-filter-bar">
+          <input
+            type="text"
+            className="terminal-input section-filter-input"
+            placeholder="Filter admin panel by contract or function..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
       <div className="admin-functions-list">
-        {Object.entries(groupedByContract).map(([contractName, data]) => (
+        {filteredContracts.map(([contractName, data]) => (
           <div key={contractName} className="admin-contract-group">
             <div className="admin-contract-header">
               <div className="admin-contract-title">
@@ -572,6 +597,13 @@ function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
             </div>
           </div>
         )}
+        {adminFunctions.length > 0 && filteredContracts.length === 0 && (
+          <div className="terminal-box">
+            <div className="terminal-line">
+              <span className="terminal-text">No admin panel matches for that filter.</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -579,6 +611,18 @@ function AdminPanel({ contracts, addresses, onContractSelect, onBack }) {
 
 // Table of Contents component
 function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelSelect, onCuratorSelect }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredContracts = CONTRACT_NAMES.filter((contractName) => {
+    if (!normalizedSearch) return true;
+
+    const contract = contracts[contractName];
+    if (!contract) return false;
+
+    const title = (contract.title || contractName).toLowerCase();
+    return title.includes(normalizedSearch) || contractName.toLowerCase().includes(normalizedSearch);
+  });
+
   return (
     <div className="toc-section">
       <div className="toc-header">
@@ -592,9 +636,18 @@ function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelS
           </button>
         </div>
       </div>
+      <div className="section-filter-bar">
+        <input
+          type="text"
+          className="terminal-input section-filter-input"
+          placeholder="Filter table of contracts..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
       <div className="toc-grid">
-        {CONTRACT_NAMES.map((contractName) => {
-          const contract = CONTRACT_LIBRARY[contractName];
+        {filteredContracts.map((contractName) => {
+          const contract = contracts[contractName];
           if (!contract) return null;
 
           const hasAddress = addresses[contractName] && addresses[contractName] !== '0xPLACEHOLDER';
@@ -620,6 +673,13 @@ function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelS
           );
         })}
       </div>
+      {filteredContracts.length === 0 && (
+        <div className="terminal-box">
+          <div className="terminal-line">
+            <span className="terminal-text">No contracts match that filter.</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -627,6 +687,8 @@ function TableOfContents({ contracts, addresses, onContractSelect, onAdminPanelS
 // Main App component
 function AppContent() {
   const { address, isConnected } = useAccount();
+  const canBrowseWithoutWallet = BYPASS_WALLET_REQUIRED;
+  const hasDashboardAccess = canBrowseWithoutWallet || isConnected;
   const [selectedContract, setSelectedContract] = useState(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showCuratooor, setShowCuratooor] = useState(false);
@@ -704,6 +766,11 @@ function AppContent() {
           <div className="connect-wrapper">
             <ConnectButton />
           </div>
+          {canBrowseWithoutWallet && !isConnected && (
+            <div className="terminal-line">
+              <span className="terminal-text">Browse mode enabled. Wallet connection is optional.</span>
+            </div>
+          )}
           {isConnected && (
             <div className="terminal-line">
               <span className="terminal-success">[CONNECTED]</span>
@@ -712,7 +779,7 @@ function AppContent() {
           )}
         </div>
 
-        {!isConnected ? (
+        {!hasDashboardAccess ? (
           <div className="terminal-box">
             <div className="terminal-line">
               <span className="terminal-text">Please connect wallet to access dashboard</span>
@@ -765,19 +832,12 @@ function AppContent() {
   );
 }
 
-// Configure RainbowKit with browser wallet fallback
-// Create config with explicit connectors including browser wallet fallback
-const config = createConfig({
+const reownProjectId = process.env.REACT_APP_REOWN_ID || process.env.REOWN_ID || '00000000000000000000000000000000';
+
+const config = getDefaultConfig({
+  appName: 'Alchemix V3 Admin Dashboard',
+  projectId: reownProjectId,
   chains: [optimism],
-  connectors: [
-    metaMask(),
-    coinbaseWallet({ appName: 'Alchemix V3 Admin Dashboard' }),
-    walletConnect({ projectId: 'YOUR_PROJECT_ID' }),
-    injected(), // Browser wallet fallback - detects any injected wallet (MetaMask, Rabby, etc.)
-  ],
-  transports: {
-    [optimism.id]: http(),
-  },
   ssr: false,
 });
 
